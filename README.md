@@ -1,7 +1,7 @@
 # MLJ <> DecisionTree.jl
 
 Repository implementing MLJ interface for 
-[DecisionTree](https://github.com/JuliaStats/DecisionTree.jl) models.
+[DecisionTree](https://github.com/bensadeghi/DecisionTree.jl) models.
 
 
 [![Build Status](https://travis-ci.com/alan-turing-institute/DecisionTreeInterface.jl.svg?branch=master)](https://travis-ci.com/github/alan-turing-institute/MLJDecisionTreeInterface.jl)
