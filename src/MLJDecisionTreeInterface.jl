@@ -10,6 +10,7 @@ const MMI = MLJModelInterface
 import DecisionTree
 
 const DT = DecisionTree
+const PKG = "MLJDecisionTreeInterface"
 
 struct TreePrinter{T}
     tree::T
@@ -386,33 +387,38 @@ metadata_pkg.(
     is_wrapper = false)
 
 metadata_model(DecisionTreeClassifier,
-    input   = Table(Continuous, Count, OrderedFactor),
-    target  = AbstractVector{<:Finite},
-    weights = false,
-    descr   = DTC_DESCR)
+               input   = Table(Continuous, Count, OrderedFactor),
+               target  = AbstractVector{<:Finite},
+               weights = false,
+               descr   = DTC_DESCR,
+               path = "$PKG.DecisionTreeClassifier")
 
 metadata_model(RandomForestClassifier,
-    input   = Table(Continuous, Count, OrderedFactor),
-    target  = AbstractVector{<:Finite},
-    weights = false,
-    descr   = RFC_DESCR)
+               input   = Table(Continuous, Count, OrderedFactor),
+               target  = AbstractVector{<:Finite},
+               weights = false,
+               descr   = RFC_DESCR,
+               path = "$PKG.RandomForestClassifier")
 
 metadata_model(AdaBoostStumpClassifier,
-    input   = Table(Continuous, Count, OrderedFactor),
-    target  = AbstractVector{<:Finite},
-    weights = false,
-    descr   = ABS_DESCR)
+               input   = Table(Continuous, Count, OrderedFactor),
+               target  = AbstractVector{<:Finite},
+               weights = false,
+               descr   = ABS_DESCR,
+               path    = "$PKG.AdaBoostStumpClassifier")
 
 metadata_model(DecisionTreeRegressor,
-    input   = Table(Continuous, Count, OrderedFactor),
-    target  = AbstractVector{Continuous},
-    weights = false,
-    descr   = DTR_DESCR)
+               input   = Table(Continuous, Count, OrderedFactor),
+               target  = AbstractVector{Continuous},
+               weights = false,
+               descr   = DTR_DESCR,
+               path    = "$PKG.DecisionTreeRegressor")
 
 metadata_model(RandomForestRegressor,
-    input   = Table(Continuous, Count, OrderedFactor),
-    target  = AbstractVector{Continuous},
-    weights = false,
-    descr   = RFR_DESCR)
+               input   = Table(Continuous, Count, OrderedFactor),
+               target  = AbstractVector{Continuous},
+               weights = false,
+               descr   = RFR_DESCR,
+               path =    "$PKG.RandomForestRegressor")
 
 end # module
