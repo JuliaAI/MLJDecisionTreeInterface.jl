@@ -8,7 +8,7 @@ Random.seed!(1234)
 # load code to be tested:
 import MLJModels
 import DecisionTree
-using MLJModels.DecisionTree_
+using MLJDecisionTreeInterface
 
 # get some test data:
 X, y = @load_iris
