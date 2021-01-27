@@ -6,7 +6,6 @@ using Random
 Random.seed!(1234)
 
 # load code to be tested:
-import MLJModels
 import DecisionTree
 using MLJDecisionTreeInterface
 
@@ -38,7 +37,6 @@ yhat = MLJBase.predict(baretree, fitresult, X);
 yyhat = predict_mode(baretree, fitresult, MLJBase.selectrows(X, 1:3))
 @test MLJBase.classes(yyhat[1]) == MLJBase.classes(y[1])
 
-info_dict(baretree)
 
 # # testing machine interface:
 # tree = machine(baretree, X, y)
@@ -85,7 +83,6 @@ clf = DecisionTreeClassifier(pdf_smoothing=0)
 fitresult, _, _ = MLJBase.fit(clf, 1, X, yfinite)
 @test sum(predict(clf, fitresult, X) .== yfinite) == 0 # perfect prediction
 
-info_dict(R1Tree)
 
 # --  Ensemble
 
