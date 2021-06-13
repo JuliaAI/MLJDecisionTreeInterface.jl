@@ -146,7 +146,7 @@ function MMI.predict(m::DecisionTreeClassifier, fitresult, Xnew)
 end
 
 """
-RandomForestClassifer(; kwargs...)
+RandomForestClassifier(; kwargs...)
 
 $RFC_DESCR
 
