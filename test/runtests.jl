@@ -104,3 +104,30 @@ rfr = RandomForestRegressor()
 m = machine(rfr, X, y)
 fit!(m)
 @test rms(predict(m, X), y) < 0.4
+
+N = 10
+function reproducibility(model, X, y, loss)
+    model.rng = 123
+    model.n_subfeatures = 1
+    mach = machine(model, X, y)
+    train, test = partition(eachindex(y), 0.7)
+    errs = map(1:N) do i
+        fit!(mach, rows=train, force=true, verbosity=0)
+        yhat = predict(mach, rows=test)
+        loss(yhat, y[test]) |> mean
+    end
+    return length(unique(errs)) == 1
+end
+
+@testset "reporoducibility" begin
+    X, y = make_blobs();
+    loss = BrierLoss()
+    for model in [DecisionTreeClassifier(), RandomForestClassifier()]
+        @test reproducibility(model, X, y, loss)
+    end
+    X, y = make_regression();
+    loss = LPLoss(p=2)
+    for model in [DecisionTreeRegressor(), RandomForestRegressor()]
+        @test reproducibility(model, X, y, loss)
+    end
+end

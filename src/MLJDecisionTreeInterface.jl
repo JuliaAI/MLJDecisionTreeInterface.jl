@@ -4,11 +4,12 @@ import MLJModelInterface
 import MLJModelInterface: @mlj_model, metadata_pkg, metadata_model,
                           Table, Continuous, Count, Finite, OrderedFactor,
                           Multiclass
-
-const MMI = MLJModelInterface
-
 import DecisionTree
 
+using Random
+import Random.GLOBAL_RNG
+
+const MMI = MLJModelInterface
 const DT = DecisionTree
 const PKG = "MLJDecisionTreeInterface"
 
@@ -73,9 +74,11 @@ from the DecisionTree.jl algorithm).
 - `merge_purity_threshold=1.0`:  (post-pruning) merge leaves having `>=thresh`
                            combined purity
 
-- `pdf_smoothing=0.0`:     threshold for smoothing the predicted scores
-
 - `display_depth=5`:       max depth to show when displaying the tree
+
+- `rng=Random.GLOBAL_RNG`: random number generator or seed
+
+- `pdf_smoothing=0.0`:     threshold for smoothing the predicted scores
 
 """
 @mlj_model mutable struct DecisionTreeClassifier <: MMI.Probabilistic
@@ -88,6 +91,7 @@ from the DecisionTree.jl algorithm).
     merge_purity_threshold::Float64 = 1.0::(_ ≤ 1)
     pdf_smoothing::Float64       = 0.0::(0 ≤ _ ≤ 1)
     display_depth::Int           = 5::(_ ≥ 1)
+    rng::Union{AbstractRNG,Integer} = GLOBAL_RNG
 end
 
 function MMI.fit(m::DecisionTreeClassifier, verbosity::Int, X, y)
@@ -102,7 +106,8 @@ function MMI.fit(m::DecisionTreeClassifier, verbosity::Int, X, y)
                          m.max_depth,
                          m.min_samples_leaf,
                          m.min_samples_split,
-                         m.min_purity_increase)
+                         m.min_purity_increase,
+                         rng=m.rng)
     if m.post_prune
         tree = DT.prune_tree(tree, m.merge_purity_threshold)
     end
@@ -167,7 +172,10 @@ $RFC_DESCR
 
 - `sampling_fraction=0.7`  fraction of samples to train each tree on
 
+- `rng=Random.GLOBAL_RNG`: random number generator or seed
+
 - `pdf_smoothing=0.0`:     threshold for smoothing the predicted scores
+
 
 """
 @mlj_model mutable struct RandomForestClassifier <: MMI.Probabilistic
@@ -179,6 +187,7 @@ $RFC_DESCR
     n_trees::Int                 = 10::(_ ≥ 2)
     sampling_fraction::Float64   = 0.7::(0 < _ ≤ 1)
     pdf_smoothing::Float64       = 0.0::(0 ≤ _ ≤ 1)
+    rng::Union{AbstractRNG,Integer} = GLOBAL_RNG
 end
 
 function MMI.fit(m::RandomForestClassifier, verbosity::Int, X, y)
@@ -195,7 +204,8 @@ function MMI.fit(m::RandomForestClassifier, verbosity::Int, X, y)
                              m.max_depth,
                              m.min_samples_leaf,
                              m.min_samples_split,
-                             m.min_purity_increase)
+                             m.min_purity_increase;
+                             rng=m.rng)
     cache  = nothing
     report = NamedTuple()
     return (forest, classes_seen, integers_seen), cache, report
@@ -280,6 +290,9 @@ are Deterministic.
 
 - `merge_purity_threshold=1.0`: (post-pruning) merge leaves having `>=thresh`
                            combined purity
+
+- `rng=Random.GLOBAL_RNG`: random number generator or seed
+
 """
 @mlj_model mutable struct DecisionTreeRegressor <: MMI.Deterministic
     max_depth::Int                               = (-)(1)::(_ ≥ -1)
@@ -289,6 +302,7 @@ are Deterministic.
     n_subfeatures::Int                   = 0::(_ ≥ -1)
     post_prune::Bool                     = false
     merge_purity_threshold::Float64 = 1.0::(0 ≤ _ ≤ 1)
+    rng::Union{AbstractRNG,Integer} = GLOBAL_RNG
 end
 
 function MMI.fit(m::DecisionTreeRegressor, verbosity::Int, X, y)
@@ -298,7 +312,8 @@ function MMI.fit(m::DecisionTreeRegressor, verbosity::Int, X, y)
                             m.max_depth,
                             m.min_samples_leaf,
                             m.min_samples_split,
-                            m.min_purity_increase)
+                            m.min_purity_increase;
+                            rng=m.rng)
 
     if m.post_prune
         tree = DT.prune_tree(tree, m.merge_purity_threshold)
@@ -337,6 +352,8 @@ $RFC_DESCR
 
 - `sampling_fraction=0.7`  fraction of samples to train each tree on
 
+- `rng=Random.GLOBAL_RNG`: random number generator or seed
+
 - `pdf_smoothing=0.0`:     threshold for smoothing the predicted scores
 
 """
@@ -349,6 +366,7 @@ $RFC_DESCR
     n_trees::Int                 = 10::(_ ≥ 2)
     sampling_fraction::Float64   = 0.7::(0 < _ ≤ 1)
     pdf_smoothing::Float64       = 0.0::(0 ≤ _ ≤ 1)
+    rng::Union{AbstractRNG,Integer} = GLOBAL_RNG
 end
 
 function MMI.fit(m::RandomForestRegressor, verbosity::Int, X, y)
@@ -360,7 +378,8 @@ function MMI.fit(m::RandomForestRegressor, verbosity::Int, X, y)
                               m.max_depth,
                               m.min_samples_leaf,
                               m.min_samples_split,
-                              m.min_purity_increase)
+                              m.min_purity_increase,
+                              rng=m.rng)
     cache  = nothing
     report = NamedTuple()
     return forest, cache, report
