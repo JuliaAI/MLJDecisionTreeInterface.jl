@@ -63,24 +63,6 @@ where
 Train the machine using `fit!(mach, rows=...)`.
 
 
-### Operations
-
-- `predict(mach, Xnew)`: return predictions of the target given
-  features `Xnew` having the same scitype as `X` above. Predictions
-  are probabilistic, but uncalibrated.
-
-
-### Extras
-
-To visualize the fitted tree in the REPL, set `verbosity=2` when
-fitting, or call `report(mach).print_tree(display_depth)` where `mach`
-is the fitted machine, and `display_depth` the desired
-depth. Interpreting the results will require a knowledge of the
-internal integer encodings of classes, which are given in
-`fitted_params(mach)` (which also stores the raw learned tree object
-from the DecisionTree.jl algorithm).
-
-
 ### Hyper-parameters
 
 - `max_depth=-1`:          max depth of the decision tree (-1=any)
@@ -110,6 +92,39 @@ from the DecisionTree.jl algorithm).
   resulting vector of probabilities is renormalized. Smoothing is only
   applied to classes actually observed in training. Unseen classes
   retain zero-probability predictions.
+
+
+### Operations
+
+- `predict(mach, Xnew)`: return predictions of the target given
+  features `Xnew` having the same scitype as `X` above. Predictions
+  are probabilistic, but uncalibrated.
+
+- `predict_mode(mach, Xnew)`: instead return the mode of each
+  prediction above.
+
+
+### Fitted parameters
+
+The fields of `fitted_params(mach)` are:
+
+- `tree`: the tree or stump object returned by the core DecisionTree.jl algorithm
+
+- `encoding`: dictionary of target classes keyed on integers used
+  internally by DecisionTree.jl; needed to interpret pretty printing
+  of tree (obtained by calling `fit!(mach, verbosity=2)` or from
+  report - see below)
+
+
+### Report
+
+The fields of `report(mach)` are:
+
+- `classes_seen`: list of target classes actually observed in training
+
+- `print_tree`: method to print a pretty representation of the fitted
+  tree, with single argument the tree depth; interpretation requires
+  internal integer-class encoding (see "Fitted parameters" above).
 
 See also
 [DecisionTree.jl](https://github.com/bensadeghi/DecisionTree.jl) and
@@ -293,7 +308,7 @@ function MMI.fit(m::DecisionTreeRegressor, verbosity::Int, X, y)
         tree = DT.prune_tree(tree, m.merge_purity_threshold)
     end
     cache  = nothing
-    report = nothing
+    report = NamedTuple()
     return tree, cache, report
 end
 
@@ -435,13 +450,6 @@ where
 Train the machine with `fit!(mach, rows=...)`.
 
 
-### Operations
-
-- `predict(mach, Xnew)`: return predictions of the target given
-  features `Xnew` having the same scitype as `X` above. Predictions
-  are probabilistic, but uncalibrated.
-
-
 ### Hyper-parameters
 
 - `max_depth=-1`:          max depth of the decision tree (-1=any)
@@ -463,6 +471,23 @@ Train the machine with `fit!(mach, rows=...)`.
 
 - `pdf_smoothing=0.0`: threshold for smoothing the predicted scores of
   each tree.  See [`DecisionTreeClassifier`](@ref)
+
+
+### Operations
+
+- `predict(mach, Xnew)`: return predictions of the target given
+  features `Xnew` having the same scitype as `X` above. Predictions
+  are probabilistic, but uncalibrated.
+
+- `predict_mode(mach, Xnew)`: instead return the mode of each
+  prediction above.
+
+
+### Fitted parameters
+
+The fields of `fitted_params(mach)` are:
+
+- `forest`: the `Ensemble` object returned by the core DecisionTree.jl algorithm
 
 See also
 [DecisionTree.jl](https://github.com/bensadeghi/DecisionTree.jl) and
@@ -492,19 +517,32 @@ where:
 Train the machine with `fit!(mach, rows=...)`.
 
 
-### Operations
-
-- `predict(mach, Xnew)`: return predictions of the target given
-  features `Xnew` having the same scitype as `X` above. Predictions
-  are probabilistic, but uncalibrated.
-
-
 ### Hyper-parameters
 
 - `n_iter=10`:   number of iterations of AdaBoost
 
 - `pdf_smoothing=0.0`: threshold for smoothing the predicted scores.
   See [`DecisionTreeClassifier`](@ref)
+
+
+### Operations
+
+- `predict(mach, Xnew)`: return predictions of the target given
+  features `Xnew` having the same scitype as `X` above. Predictions
+  are probabilistic, but uncalibrated.
+
+- `predict_mode(mach, Xnew)`: instead return the mode of each
+  prediction above.
+
+
+### Fitted Parameters
+
+The fields of `fitted_params(mach)` are:
+
+- `stumps`: the `Ensemble` object returned by the core DecisionTree.jl
+  algorithm.
+
+- `coefficients`: the stump coefficients (one per stump)
 
 See also
 [DecisionTree.jl](https://github.com/bensadeghi/DecisionTree.jl) and
@@ -534,12 +572,6 @@ where
 Train the machine with `fit!(mach, rows=...)`.
 
 
-### Operations
-
-- `predict(mach, Xnew)`: return predictions of the target given new
-  features `Xnew` having the same scitype as `X` above.
-
-
 ### Hyper-parameters
 
 - `max_depth=-1`:          max depth of the decision tree (-1=any)
@@ -559,6 +591,20 @@ Train the machine with `fit!(mach, rows=...)`.
                            combined purity `>= merge_purity_threshold`
 
 - `rng=Random.GLOBAL_RNG`: random number generator or seed
+
+
+### Operations
+
+- `predict(mach, Xnew)`: return predictions of the target given new
+  features `Xnew` having the same scitype as `X` above.
+
+
+### Fitted parameters
+
+The fields of `fitted_params(mach)` are:
+
+- `tree`: the tree or stump object returned by the core
+  DecisionTree.jl algorithm
 
 See also
 [DecisionTree.jl](https://github.com/bensadeghi/DecisionTree.jl) and
@@ -588,12 +634,6 @@ where
 Train the machine with `fit!(mach, rows=...)`.
 
 
-### Operations
-
-- `predict(mach, Xnew)`: return predictions of the target given new
-  features `Xnew` having the same scitype as `X` above.
-
-
 ### Hyper-parameters
 
 - `max_depth=-1`:          max depth of the decision tree (-1=any)
@@ -612,6 +652,19 @@ Train the machine with `fit!(mach, rows=...)`.
 - `sampling_fraction=0.7`  fraction of samples to train each tree on
 
 - `rng=Random.GLOBAL_RNG`: random number generator or seed
+
+
+### Operations
+
+- `predict(mach, Xnew)`: return predictions of the target given new
+  features `Xnew` having the same scitype as `X` above.
+
+
+### Fitted parameters
+
+The fields of `fitted_params(mach)` are:
+
+- `forest`: the `Ensemble` object returned by the core DecisionTree.jl algorithm
 
 See also
 [DecisionTree.jl](https://github.com/bensadeghi/DecisionTree.jl) and
