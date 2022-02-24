@@ -29,108 +29,6 @@ Base.show(stream::IO, c::TreePrinter) =
 # doc-strings, defined later, are generated using the `doc_header`
 # utility to automatically generate the header, another option.
 
-"""
-    DecisionTreeClassifer
-
-Model type for a CART decision tree classifier, based on
-[DecisionTree.jl](https://github.com/bensadeghi/DecisionTree.jl).
-
-From MLJ, the type can be imported using
-
-    DecisionTreeClassifier = @load DecisionTreeClassifier pkg=DecisionTree
-
-Do `model = DecisionTreeClassifier()` to construct an instance with
-default hyper-parameters. Provide keyword arguments to override
-hyper-parameter defaults, as in
-`DecisionTreeClassifier(max_depth=...)`.
-
-
-### Training data
-
-In MLJ or MLJBase, bind an instance `model` to data with
-
-    mach = machine(model, X, y)
-
-where
-
-- `X`: any table of input features (eg, a `DataFrame`) whose columns
-  each have one of the following element scitypes: `Continuous`,
-  `Count`, or `<:OrderedFactor`.
-
-- `y`: is the target, which can be any `AbstractVector` whose element
-  scitype is `<:OrderedFactor` or `<:Multiclass`.
-
-Train the machine using `fit!(mach, rows=...)`.
-
-
-### Hyper-parameters
-
-- `max_depth=-1`:          max depth of the decision tree (-1=any)
-
-- `min_samples_leaf=1`:    max number of samples each leaf needs to have
-
-- `min_samples_split=2`:   min number of samples needed for a split
-
-- `min_purity_increase=0`: min purity needed for a split
-
-- `n_subfeatures=0`: number of features to select at random (0 for all,
-  -1 for square root of number of features)
-
-- `post_prune=false`:      set to `true` for post-fit pruning
-
-- `merge_purity_threshold=1.0`: (post-pruning) merge leaves having
-                           combined purity `>= merge_purity_threshold`
-
-- `display_depth=5`:       max depth to show when displaying the tree
-
-- `rng=Random.GLOBAL_RNG`: random number generator or seed
-
-- `pdf_smoothing=0.0`: threshold for smoothing the predicted scores.
-  Raw leaf-based probabilities are smoothed as follows: If `n` is the
-  number of observed classes, then each class probability is replaced
-  by `pdf_smoothing/n`, if it falls below that ratio, and the
-  resulting vector of probabilities is renormalized. Smoothing is only
-  applied to classes actually observed in training. Unseen classes
-  retain zero-probability predictions.
-
-
-### Operations
-
-- `predict(mach, Xnew)`: return predictions of the target given
-  features `Xnew` having the same scitype as `X` above. Predictions
-  are probabilistic, but uncalibrated.
-
-- `predict_mode(mach, Xnew)`: instead return the mode of each
-  prediction above.
-
-
-### Fitted parameters
-
-The fields of `fitted_params(mach)` are:
-
-- `tree`: the tree or stump object returned by the core DecisionTree.jl algorithm
-
-- `encoding`: dictionary of target classes keyed on integers used
-  internally by DecisionTree.jl; needed to interpret pretty printing
-  of tree (obtained by calling `fit!(mach, verbosity=2)` or from
-  report - see below)
-
-
-### Report
-
-The fields of `report(mach)` are:
-
-- `classes_seen`: list of target classes actually observed in training
-
-- `print_tree`: method to print a pretty representation of the fitted
-  tree, with single argument the tree depth; interpretation requires
-  internal integer-class encoding (see "Fitted parameters" above).
-
-See also
-[DecisionTree.jl](https://github.com/bensadeghi/DecisionTree.jl) and
-the unwrapped model type [`MLJDecisionTreeInterface.DecisionTree.DecisionTreeClassifier`](@ref).
-
-"""
 MMI.@mlj_model mutable struct DecisionTreeClassifier <: MMI.Probabilistic
     max_depth::Int               = (-)(1)::(_ ≥ -1)
     min_samples_leaf::Int        = 1::(_ ≥ 0)
@@ -423,16 +321,101 @@ MMI.metadata_model(
 
 # # DOCUMENT STRINGS
 
-# The docstring for `DecisionTreeClassifier` is defined already before
-# the it's `struct` declaration, as an exemplar for authors of MLJ
-# model interfaces. Below we use the `doc_header` utility to
-# automatically generate the header for the other docstrings, another
-# option.
+"""
+$(MMI.doc_header(DecisionTreeClassifier))
 
-const DOC_RANDOM_FOREST_CLASSIFIER = """
+# Training data
+
+In MLJ or MLJBase, bind an instance `model` to data with
+
+    mach = machine(model, X, y)
+
+where
+
+- `X`: any table of input features (eg, a `DataFrame`) whose columns
+  each have one of the following element scitypes: `Continuous`,
+  `Count`, or `<:OrderedFactor`.
+
+- `y`: is the target, which can be any `AbstractVector` whose element
+  scitype is `<:OrderedFactor` or `<:Multiclass`.
+
+Train the machine using `fit!(mach, rows=...)`.
+
+
+# Hyper-parameters
+
+- `max_depth=-1`:          max depth of the decision tree (-1=any)
+
+- `min_samples_leaf=1`:    max number of samples each leaf needs to have
+
+- `min_samples_split=2`:   min number of samples needed for a split
+
+- `min_purity_increase=0`: min purity needed for a split
+
+- `n_subfeatures=0`: number of features to select at random (0 for all,
+  -1 for square root of number of features)
+
+- `post_prune=false`:      set to `true` for post-fit pruning
+
+- `merge_purity_threshold=1.0`: (post-pruning) merge leaves having
+                           combined purity `>= merge_purity_threshold`
+
+- `display_depth=5`:       max depth to show when displaying the tree
+
+- `rng=Random.GLOBAL_RNG`: random number generator or seed
+
+- `pdf_smoothing=0.0`: threshold for smoothing the predicted scores.
+  Raw leaf-based probabilities are smoothed as follows: If `n` is the
+  number of observed classes, then each class probability is replaced
+  by `pdf_smoothing/n`, if it falls below that ratio, and the
+  resulting vector of probabilities is renormalized. Smoothing is only
+  applied to classes actually observed in training. Unseen classes
+  retain zero-probability predictions.
+
+
+# Operations
+
+- `predict(mach, Xnew)`: return predictions of the target given
+  features `Xnew` having the same scitype as `X` above. Predictions
+  are probabilistic, but uncalibrated.
+
+- `predict_mode(mach, Xnew)`: instead return the mode of each
+  prediction above.
+
+
+# Fitted parameters
+
+The fields of `fitted_params(mach)` are:
+
+- `tree`: the tree or stump object returned by the core DecisionTree.jl algorithm
+
+- `encoding`: dictionary of target classes keyed on integers used
+  internally by DecisionTree.jl; needed to interpret pretty printing
+  of tree (obtained by calling `fit!(mach, verbosity=2)` or from
+  report - see below)
+
+
+# Report
+
+The fields of `report(mach)` are:
+
+- `classes_seen`: list of target classes actually observed in training
+
+- `print_tree`: method to print a pretty representation of the fitted
+  tree, with single argument the tree depth; interpretation requires
+  internal integer-class encoding (see "Fitted parameters" above).
+
+See also
+[DecisionTree.jl](https://github.com/bensadeghi/DecisionTree.jl) and
+the unwrapped model type [`MLJDecisionTreeInterface.DecisionTree.DecisionTreeClassifier`](@ref).
+
+"""
+DecisionTreeClassifier
+
+"""
 $(MMI.doc_header(RandomForestClassifier))
 
-### Training data
+# Training data
 
 In MLJ or MLJBase, bind an instance `model` to data with
 
@@ -450,7 +433,7 @@ where
 Train the machine with `fit!(mach, rows=...)`.
 
 
-### Hyper-parameters
+# Hyper-parameters
 
 - `max_depth=-1`:          max depth of the decision tree (-1=any)
 
@@ -473,7 +456,7 @@ Train the machine with `fit!(mach, rows=...)`.
   each tree.  See [`DecisionTreeClassifier`](@ref)
 
 
-### Operations
+# Operations
 
 - `predict(mach, Xnew)`: return predictions of the target given
   features `Xnew` having the same scitype as `X` above. Predictions
@@ -483,7 +466,7 @@ Train the machine with `fit!(mach, rows=...)`.
   prediction above.
 
 
-### Fitted parameters
+# Fitted parameters
 
 The fields of `fitted_params(mach)` are:
 
@@ -495,11 +478,12 @@ the unwrapped model type
 [`MLJDecisionTreeInterface.DecisionTree.RandomForestClassifier`](@ref).
 
 """
+RandomForestClassifier
 
-const DOC_ADA_BOOST_STUMP_CLASSIFIER = """
+"""
 $(MMI.doc_header(AdaBoostStumpClassifier))
 
-### Training data
+# Training data
 
 In MLJ or MLJBase, bind an instance `model` to data with
 
@@ -517,7 +501,7 @@ where:
 Train the machine with `fit!(mach, rows=...)`.
 
 
-### Hyper-parameters
+# Hyper-parameters
 
 - `n_iter=10`:   number of iterations of AdaBoost
 
@@ -525,7 +509,7 @@ Train the machine with `fit!(mach, rows=...)`.
   See [`DecisionTreeClassifier`](@ref)
 
 
-### Operations
+# Operations
 
 - `predict(mach, Xnew)`: return predictions of the target given
   features `Xnew` having the same scitype as `X` above. Predictions
@@ -535,7 +519,7 @@ Train the machine with `fit!(mach, rows=...)`.
   prediction above.
 
 
-### Fitted Parameters
+# Fitted Parameters
 
 The fields of `fitted_params(mach)` are:
 
@@ -550,11 +534,12 @@ the unwrapped model type
 [`MLJDecisionTreeInterface.DecisionTree.AdaBoostStumpClassifier`](@ref).
 
 """
+AdaBoostStumpClassifier
 
-const DOC_DECISION_TREE_REGRESSOR ="""
+"""
 $(MMI.doc_header(DecisionTreeRegressor))
 
-### Training data
+# Training data
 
 In MLJ or MLJBase, bind an instance `model` to data with
 
@@ -572,7 +557,7 @@ where
 Train the machine with `fit!(mach, rows=...)`.
 
 
-### Hyper-parameters
+# Hyper-parameters
 
 - `max_depth=-1`:          max depth of the decision tree (-1=any)
 
@@ -593,13 +578,13 @@ Train the machine with `fit!(mach, rows=...)`.
 - `rng=Random.GLOBAL_RNG`: random number generator or seed
 
 
-### Operations
+# Operations
 
 - `predict(mach, Xnew)`: return predictions of the target given new
   features `Xnew` having the same scitype as `X` above.
 
 
-### Fitted parameters
+# Fitted parameters
 
 The fields of `fitted_params(mach)` are:
 
@@ -612,11 +597,12 @@ the unwrapped model type
 [`MLJDecisionTreeInterface.DecisionTree.DecisionTreeRegressor`](@ref).
 
 """
+DecisionTreeRegressor
 
-const DOC_RANDOM_FOREST_REGRESSOR = """
+"""
 $(MMI.doc_header(RandomForestRegressor))
 
-### Training data
+# Training data
 
 In MLJ or MLJBase, bind an instance `model` to data with
 
@@ -634,7 +620,7 @@ where
 Train the machine with `fit!(mach, rows=...)`.
 
 
-### Hyper-parameters
+# Hyper-parameters
 
 - `max_depth=-1`:          max depth of the decision tree (-1=any)
 
@@ -654,13 +640,13 @@ Train the machine with `fit!(mach, rows=...)`.
 - `rng=Random.GLOBAL_RNG`: random number generator or seed
 
 
-### Operations
+# Operations
 
 - `predict(mach, Xnew)`: return predictions of the target given new
   features `Xnew` having the same scitype as `X` above.
 
 
-### Fitted parameters
+# Fitted parameters
 
 The fields of `fitted_params(mach)` are:
 
@@ -672,10 +658,6 @@ the unwrapped model type
 [`MLJDecisionTreeInterface.DecisionTree.RandomForestRegressor`](@ref).
 
 """
-
-@doc DOC_RANDOM_FOREST_CLASSIFIER RandomForestClassifier
-@doc DOC_ADA_BOOST_STUMP_CLASSIFIER AdaBoostStumpClassifier
-@doc DOC_DECISION_TREE_REGRESSOR DecisionTreeRegressor
-@doc DOC_RANDOM_FOREST_REGRESSOR RandomForestRegressor
+RandomForestRegressor
 
 end # module
