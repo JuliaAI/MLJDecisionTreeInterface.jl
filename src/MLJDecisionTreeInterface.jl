@@ -43,8 +43,15 @@ MMI.@mlj_model mutable struct DecisionTreeClassifier <: MMI.Probabilistic
 end
 
 function MMI.fit(m::DecisionTreeClassifier, verbosity::Int, X, y)
+    schema = Tables.schema(X)
     Xmatrix = MMI.matrix(X)
     yplain  = MMI.int(y)
+
+    if schema === nothing
+        features = [Symbol("x$j") for j in 1:size(Xmatrix, 2)]
+    else
+        features = schema.names
+    end
 
     classes_seen  = filter(in(unique(y)), MMI.classes(y[1]))
     integers_seen = MMI.int(classes_seen)
@@ -61,11 +68,12 @@ function MMI.fit(m::DecisionTreeClassifier, verbosity::Int, X, y)
     end
     verbosity < 2 || DT.print_tree(tree, m.display_depth)
 
-    fitresult = (tree, classes_seen, integers_seen)
+    fitresult = (tree, classes_seen, integers_seen, features)
 
     cache  = nothing
     report = (classes_seen=classes_seen,
-              print_tree=TreePrinter(tree))
+              print_tree=TreePrinter(tree),
+              features=features)
 
     return fitresult, cache, report
 end
@@ -76,7 +84,7 @@ function get_encoding(classes_seen)
 end
 
 MMI.fitted_params(::DecisionTreeClassifier, fitresult) =
-    (tree=fitresult[1], encoding=get_encoding(fitresult[2]))
+    (tree=fitresult[1], encoding=get_encoding(fitresult[2]), features=features)
 
 function smooth(scores, smoothing)
     iszero(smoothing) && return scores
