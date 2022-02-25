@@ -405,6 +405,49 @@ The fields of `report(mach)` are:
   tree, with single argument the tree depth; interpretation requires
   internal integer-class encoding (see "Fitted parameters" above).
 
+
+# Examples
+
+```
+using MLJ
+Tree = @load DecisionTreeClassifier pkg=DecisionTree
+tree = Tree(max_depth=4, min_samples_split=3)
+
+X, y = @load_iris
+mach = machine(tree, X, y) |> fit!
+
+Xnew = (sepal_length = [6.4, 7.2, 7.4],
+        sepal_width = [2.8, 3.0, 2.8],
+        petal_length = [5.6, 5.8, 6.1],
+        petal_width = [2.1, 1.6, 1.9],)
+yhat = predict(mach, Xnew) # probabilistic predictions
+predict_mode(mach, Xnew)   # point predictions
+pdf.(yhat, "virginica")    # probabilities for the "verginica" class
+
+fitted_params(mach).tree # raw tree or stump object from DecisionTrees.jl
+
+julia> report(mach).print_tree(3)
+Feature 4, Threshold 0.8
+L-> 1 : 50/50
+R-> Feature 4, Threshold 1.75
+    L-> Feature 3, Threshold 4.95
+        L->
+        R->
+    R-> Feature 3, Threshold 4.85
+        L->
+        R-> 3 : 43/43
+```
+
+To interpret the internal class labelling:
+
+```
+julia> fitted_params(mach).encoding
+Dict{CategoricalArrays.CategoricalValue{String, UInt32}, UInt32} with 3 entries:
+  "virginica"  => 0x00000003
+  "setosa"     => 0x00000001
+  "versicolor" => 0x00000002
+```
+
 See also
 [DecisionTree.jl](https://github.com/bensadeghi/DecisionTree.jl) and
 the unwrapped model type [`MLJDecisionTreeInterface.DecisionTree.DecisionTreeClassifier`](@ref).
@@ -472,6 +515,27 @@ The fields of `fitted_params(mach)` are:
 
 - `forest`: the `Ensemble` object returned by the core DecisionTree.jl algorithm
 
+
+# Examples
+
+```
+using MLJ
+Forest = @load RandomForestClassifier pkg=DecisionTree
+forest = Forest(min_samples_split=6, n_subfeatures=3)
+
+X, y = @load_iris
+mach = machine(forest, X, y) |> fit!
+
+Xnew = (sepal_length = [6.4, 7.2, 7.4],
+        sepal_width = [2.8, 3.0, 2.8],
+        petal_length = [5.6, 5.8, 6.1],
+        petal_width = [2.1, 1.6, 1.9],)
+yhat = predict(mach, Xnew) # probabilistic predictions
+predict_mode(mach, Xnew)   # point predictions
+pdf.(yhat, "virginica")    # probabilities for the "verginica" class
+
+fitted_params(mach).forest # raw `Ensemble` object from DecisionTrees.jl
+```
 See also
 [DecisionTree.jl](https://github.com/bensadeghi/DecisionTree.jl) and
 the unwrapped model type
@@ -527,6 +591,26 @@ The fields of `fitted_params(mach)` are:
   algorithm.
 
 - `coefficients`: the stump coefficients (one per stump)
+
+```
+using MLJ
+Booster = @load AdaBoostStumpClassifier pkg=DecisionTree
+booster = Booster(n_iter=15)
+
+X, y = @load_iris
+mach = machine(booster, X, y) |> fit!
+
+Xnew = (sepal_length = [6.4, 7.2, 7.4],
+        sepal_width = [2.8, 3.0, 2.8],
+        petal_length = [5.6, 5.8, 6.1],
+        petal_width = [2.1, 1.6, 1.9],)
+yhat = predict(mach, Xnew) # probabilistic predictions
+predict_mode(mach, Xnew)   # point predictions
+pdf.(yhat, "virginica")    # probabilities for the "verginica" class
+
+fitted_params(mach).stumps # raw `Ensemble` object from DecisionTree.jl
+fitted_params(mach).coefs  # coefficient associated with each stump
+```
 
 See also
 [DecisionTree.jl](https://github.com/bensadeghi/DecisionTree.jl) and
@@ -591,6 +675,23 @@ The fields of `fitted_params(mach)` are:
 - `tree`: the tree or stump object returned by the core
   DecisionTree.jl algorithm
 
+
+# Examples
+
+```
+using MLJ
+Tree = @load DecisionTreeRegressor pkg=DecisionTree
+tree = Tree(max_depth=4, min_samples_split=3)
+
+X, y = make_regression(100, 2) # synthetic data
+mach = machine(tree, X, y) |> fit!
+
+Xnew, _ = make_regression(3, 2)
+yhat = predict(mach, Xnew) # new predictions
+
+fitted_params(mach).tree # raw tree or stump object from DecisionTree.jl
+```
+
 See also
 [DecisionTree.jl](https://github.com/bensadeghi/DecisionTree.jl) and
 the unwrapped model type
@@ -651,6 +752,23 @@ Train the machine with `fit!(mach, rows=...)`.
 The fields of `fitted_params(mach)` are:
 
 - `forest`: the `Ensemble` object returned by the core DecisionTree.jl algorithm
+
+
+# Examples
+
+```
+using MLJ
+Forest = @load RandomForestRegressor pkg=DecisionTree
+forest = Forest(max_depth=4, min_samples_split=3)
+
+X, y = make_regression(100, 2) # synthetic data
+mach = machine(forest, X, y) |> fit!
+
+Xnew, _ = make_regression(3, 2)
+yhat = predict(mach, Xnew) # new predictions
+
+fitted_params(mach).forest # raw `Ensemble` object from DecisionTree.jl
+```
 
 See also
 [DecisionTree.jl](https://github.com/bensadeghi/DecisionTree.jl) and
