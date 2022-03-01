@@ -1,9 +1,7 @@
 module MLJDecisionTreeInterface
 
 import MLJModelInterface
-import MLJModelInterface: @mlj_model, metadata_pkg, metadata_model,
-                          Table, Continuous, Count, Finite, OrderedFactor,
-                          Multiclass
+using MLJModelInterface.ScientificTypesBase
 import DecisionTree
 
 using Random
@@ -23,65 +21,15 @@ Base.show(stream::IO, c::TreePrinter) =
     print(stream, "TreePrinter object (call with display depth)")
 
 
-const DTC_DESCR = "CART decision tree classifier."
-const DTR_DESCR = "CART decision tree regressor."
-const RFC_DESCR = "Random forest classifier."
-const RFR_DESCR = "Random forest regressor."
-const ABS_DESCR = "Ada-boosted stump classifier."
+# # DECISION TREE CLASSIFIER
 
+# The following meets the MLJ standard for a `Model` docstring and is
+# created without the use of interpolation so it can be used a
+# template for authors of other MLJ model interfaces. The other
+# doc-strings, defined later, are generated using the `doc_header`
+# utility to automatically generate the header, another option.
 
-"""
-DecisionTreeClassifer(; kwargs...)
-
-$DTC_DESCR
-
-Inputs are tables with ordinal columns. That is, the element scitype
-of each column can be `Continuous`, `Count` or `OrderedFactor`.
-Predictions are probabilistic, but uncalibrated.
-
-Instead of predicting the mode class at each leaf, a `UnivariateFinite`
-distribution is fit to the leaf training classes, with smoothing
-controlled by an additional hyperparameter `pdf_smoothing`: If `n` is
-the number of observed classes, then each class probability is
-replaced by `pdf_smoothing/n`, if it falls below that ratio, and the
-resulting vector of probabilities is renormalized. Smoothing is only
-applied to classes actually observed in training. Unseen classes
-retain zero-probability predictions.
-
-To visualize the fitted tree in the REPL, set `verbosity=2` when
-fitting, or call `report(mach).print_tree(display_depth)` where `mach`
-is the fitted machine, and `display_depth` the desired
-depth. Interpretting the results will require a knowledge of the
-internal integer encodings of classes, which are given in
-`fitted_params(mach)` (which also stores the raw learned tree object
-from the DecisionTree.jl algorithm).
-
-## Hyperparameters
-
-- `max_depth=-1`:          max depth of the decision tree (-1=any)
-
-- `min_samples_leaf=1`:    max number of samples each leaf needs to have
-
-- `min_samples_split=2`:   min number of samples needed for a split
-
-- `min_purity_increase=0`: min purity needed for a split
-
-- `n_subfeatures=0`: number of features to select at random (0 for all,
-  -1 for square root of number of features)
-
-- `post_prune=false`:      set to `true` for post-fit pruning
-
-- `merge_purity_threshold=1.0`:  (post-pruning) merge leaves having `>=thresh`
-                           combined purity
-
-- `display_depth=5`:       max depth to show when displaying the tree
-
-- `rng=Random.GLOBAL_RNG`: random number generator or seed
-
-- `pdf_smoothing=0.0`:     threshold for smoothing the predicted scores
-
-"""
-@mlj_model mutable struct DecisionTreeClassifier <: MMI.Probabilistic
+MMI.@mlj_model mutable struct DecisionTreeClassifier <: MMI.Probabilistic
     max_depth::Int               = (-)(1)::(_ ≥ -1)
     min_samples_leaf::Int        = 1::(_ ≥ 0)
     min_samples_split::Int       = 2::(_ ≥ 2)
@@ -150,35 +98,10 @@ function MMI.predict(m::DecisionTreeClassifier, fitresult, Xnew)
     return MMI.UnivariateFinite(classes_seen, sm_scores)
 end
 
-"""
-RandomForestClassifier(; kwargs...)
 
-$RFC_DESCR
+# # RANDOM FOREST CLASSIFIER
 
-## Hyperparameters
-
-- `max_depth=-1`:          max depth of the decision tree (-1=any)
-
-- `min_samples_leaf=1`:    min number of samples each leaf needs to have
-
-- `min_samples_split=2`:   min number of samples needed for a split
-
-- `min_purity_increase=0`: min purity needed for a split
-
-- `n_subfeatures=-1`: number of features to select at random (0 for all,
-  -1 for square root of number of features)
-
-- `n_trees=10`:            number of trees to train
-
-- `sampling_fraction=0.7`  fraction of samples to train each tree on
-
-- `rng=Random.GLOBAL_RNG`: random number generator or seed
-
-- `pdf_smoothing=0.0`:     threshold for smoothing the predicted scores
-
-
-"""
-@mlj_model mutable struct RandomForestClassifier <: MMI.Probabilistic
+MMI.@mlj_model mutable struct RandomForestClassifier <: MMI.Probabilistic
     max_depth::Int               = (-)(1)::(_ ≥ -1)
     min_samples_leaf::Int        = 1::(_ ≥ 0)
     min_samples_split::Int       = 2::(_ ≥ 2)
@@ -221,17 +144,10 @@ function MMI.predict(m::RandomForestClassifier, fitresult, Xnew)
     return MMI.UnivariateFinite(classes_seen, sm_scores)
 end
 
-"""
-AdaBoostStumpClassifer(; kwargs...)
 
-$RFC_DESCR
+# # ADA BOOST STUMP CLASSIFIER
 
-## Hyperparameters
-
-- `n_iter=10`:   number of iterations of AdaBoost
-- `pdf_smoothing=0.0`: threshold for smoothing the predicted scores
-"""
-@mlj_model mutable struct AdaBoostStumpClassifier <: MMI.Probabilistic
+MMI.@mlj_model mutable struct AdaBoostStumpClassifier <: MMI.Probabilistic
     n_iter::Int            = 10::(_ ≥ 1)
     pdf_smoothing::Float64 = 0.0::(0 ≤ _ ≤ 1)
 end
@@ -262,39 +178,10 @@ function MMI.predict(m::AdaBoostStumpClassifier, fitresult, Xnew)
     return MMI.UnivariateFinite(classes_seen, sm_scores)
 end
 
-## REGRESSION
 
-"""
-DecisionTreeRegressor(; kwargs...)
+# # DECISION TREE REGRESSOR
 
-$DTC_DESCR
-
-Inputs are tables with ordinal columns. That is, the element scitype
-of each column can be `Continuous`, `Count` or `OrderedFactor`. Predictions
-are Deterministic.
-
-## Hyperparameters
-
-- `max_depth=-1`:          max depth of the decision tree (-1=any)
-
-- `min_samples_leaf=1`:    max number of samples each leaf needs to have
-
-- `min_samples_split=2`:   min number of samples needed for a split
-
-- `min_purity_increase=0`: min purity needed for a split
-
-- `n_subfeatures=0`: number of features to select at random (0 for all,
-  -1 for square root of number of features)
-
-- `post_prune=false`:      set to `true` for post-fit pruning
-
-- `merge_purity_threshold=1.0`: (post-pruning) merge leaves having `>=thresh`
-                           combined purity
-
-- `rng=Random.GLOBAL_RNG`: random number generator or seed
-
-"""
-@mlj_model mutable struct DecisionTreeRegressor <: MMI.Deterministic
+MMI.@mlj_model mutable struct DecisionTreeRegressor <: MMI.Deterministic
     max_depth::Int                               = (-)(1)::(_ ≥ -1)
     min_samples_leaf::Int                = 5::(_ ≥ 0)
     min_samples_split::Int               = 2::(_ ≥ 2)
@@ -319,7 +206,7 @@ function MMI.fit(m::DecisionTreeRegressor, verbosity::Int, X, y)
         tree = DT.prune_tree(tree, m.merge_purity_threshold)
     end
     cache  = nothing
-    report = nothing
+    report = NamedTuple()
     return tree, cache, report
 end
 
@@ -330,34 +217,10 @@ function MMI.predict(::DecisionTreeRegressor, tree, Xnew)
     return DT.apply_tree(tree, Xmatrix)
 end
 
-"""
-RandomForestRegressor(; kwargs...)
 
-$RFC_DESCR
+# # RANDOM FOREST REGRESSOR
 
-## Hyperparameters
-
-- `max_depth=-1`:          max depth of the decision tree (-1=any)
-
-- `min_samples_leaf=1`:    min number of samples each leaf needs to have
-
-- `min_samples_split=2`:   min number of samples needed for a split
-
-- `min_purity_increase=0`: min purity needed for a split
-
-- `n_subfeatures=-1`: number of features to select at random (0 for all,
-  -1 for square root of number of features)
-
-- `n_trees=10`:            number of trees to train
-
-- `sampling_fraction=0.7`  fraction of samples to train each tree on
-
-- `rng=Random.GLOBAL_RNG`: random number generator or seed
-
-- `pdf_smoothing=0.0`:     threshold for smoothing the predicted scores
-
-"""
-@mlj_model mutable struct RandomForestRegressor <: MMI.Deterministic
+MMI.@mlj_model mutable struct RandomForestRegressor <: MMI.Deterministic
     max_depth::Int               = (-)(1)::(_ ≥ -1)
     min_samples_leaf::Int        = 1::(_ ≥ 0)
     min_samples_split::Int       = 2::(_ ≥ 2)
@@ -392,52 +255,527 @@ function MMI.predict(::RandomForestRegressor, forest, Xnew)
     return DT.apply_forest(forest, Xmatrix)
 end
 
-# ===
 
-metadata_pkg.(
+# # METADATA (MODEL TRAITS)
+
+# following five lines of code are redundant if using this branch of
+# MLJModelInterface:
+# https://github.com/JuliaAI/MLJModelInterface.jl/pull/139
+
+# MMI.human_name(::Type{<:DecisionTreeClassifier}) = "CART decision tree classifier"
+# MMI.human_name(::Type{<:RandomForestClassifier}) = "CART random forest classifier"
+# MMI.human_name(::Type{<:AdaBoostStumpClassifier}) = "Ada-boosted stump classifier"
+# MMI.human_name(::Type{<:DecisionTreeRegressor}) = "CART decision tree regressor"
+# MMI.human_name(::Type{<:RandomForestRegressor}) = "CART random forest regressor"
+
+MMI.metadata_pkg.(
     (DecisionTreeClassifier, DecisionTreeRegressor,
      RandomForestClassifier, RandomForestRegressor,
      AdaBoostStumpClassifier),
-    name       = "DecisionTree",
-    uuid       = "7806a523-6efd-50cb-b5f6-3fa6f1930dbb",
-    url        = "https://github.com/bensadeghi/DecisionTree.jl",
-    julia      = true,
-    license    = "MIT",
-    is_wrapper = false)
+    name = "DecisionTree",
+    package_uuid = "7806a523-6efd-50cb-b5f6-3fa6f1930dbb",
+    package_url = "https://github.com/bensadeghi/DecisionTree.jl",
+    is_pure_julia = true,
+    package_license = "MIT"
+)
 
-metadata_model(DecisionTreeClassifier,
-               input   = Table(Continuous, Count, OrderedFactor),
-               target  = AbstractVector{<:Finite},
-               weights = false,
-               descr   = DTC_DESCR,
-               path = "$PKG.DecisionTreeClassifier")
+MMI.metadata_model(
+    DecisionTreeClassifier,
+    input_scitype = Table(Continuous, Count, OrderedFactor),
+    target_scitype = AbstractVector{<:Finite},
+    human_name = "CART decision tree classifier",
+    load_path = "$PKG.DecisionTreeClassifier"
+)
 
-metadata_model(RandomForestClassifier,
-               input   = Table(Continuous, Count, OrderedFactor),
-               target  = AbstractVector{<:Finite},
-               weights = false,
-               descr   = RFC_DESCR,
-               path = "$PKG.RandomForestClassifier")
+MMI.metadata_model(
+    RandomForestClassifier,
+    input_scitype = Table(Continuous, Count, OrderedFactor),
+    target_scitype = AbstractVector{<:Finite},
+    human_name = "CART random forest classifier",
+    load_path = "$PKG.RandomForestClassifier"
+)
 
-metadata_model(AdaBoostStumpClassifier,
-               input   = Table(Continuous, Count, OrderedFactor),
-               target  = AbstractVector{<:Finite},
-               weights = false,
-               descr   = ABS_DESCR,
-               path    = "$PKG.AdaBoostStumpClassifier")
+MMI.metadata_model(
+    AdaBoostStumpClassifier,
+    input_scitype = Table(Continuous, Count, OrderedFactor),
+    target_scitype = AbstractVector{<:Finite},
+    human_name = "Ada-boosted stump classifier",
+    load_path = "$PKG.AdaBoostStumpClassifier"
+)
 
-metadata_model(DecisionTreeRegressor,
-               input   = Table(Continuous, Count, OrderedFactor),
-               target  = AbstractVector{Continuous},
-               weights = false,
-               descr   = DTR_DESCR,
-               path    = "$PKG.DecisionTreeRegressor")
+MMI.metadata_model(
+    DecisionTreeRegressor,
+    input_scitype = Table(Continuous, Count, OrderedFactor),
+    target_scitype = AbstractVector{Continuous},
+    human_name = "CART decision tree regressor",
+    load_path = "$PKG.DecisionTreeRegressor"
+)
 
-metadata_model(RandomForestRegressor,
-               input   = Table(Continuous, Count, OrderedFactor),
-               target  = AbstractVector{Continuous},
-               weights = false,
-               descr   = RFR_DESCR,
-               path =    "$PKG.RandomForestRegressor")
+MMI.metadata_model(
+    RandomForestRegressor,
+    input_scitype = Table(Continuous, Count, OrderedFactor),
+    target_scitype = AbstractVector{Continuous},
+    human_name = "CART random forest regressor",
+    load_path = "$PKG.RandomForestRegressor")
+
+
+# # DOCUMENT STRINGS
+
+"""
+$(MMI.doc_header(DecisionTreeClassifier))
+
+# Training data
+
+In MLJ or MLJBase, bind an instance `model` to data with
+
+    mach = machine(model, X, y)
+
+where
+
+- `X`: any table of input features (eg, a `DataFrame`) whose columns
+  each have one of the following element scitypes: `Continuous`,
+  `Count`, or `<:OrderedFactor`.
+
+- `y`: is the target, which can be any `AbstractVector` whose element
+  scitype is `<:OrderedFactor` or `<:Multiclass`.
+
+Train the machine using `fit!(mach, rows=...)`.
+
+
+# Hyper-parameters
+
+- `max_depth=-1`:          max depth of the decision tree (-1=any)
+
+- `min_samples_leaf=1`:    max number of samples each leaf needs to have
+
+- `min_samples_split=2`:   min number of samples needed for a split
+
+- `min_purity_increase=0`: min purity needed for a split
+
+- `n_subfeatures=0`: number of features to select at random (0 for all,
+  -1 for square root of number of features)
+
+- `post_prune=false`:      set to `true` for post-fit pruning
+
+- `merge_purity_threshold=1.0`: (post-pruning) merge leaves having
+                           combined purity `>= merge_purity_threshold`
+
+- `display_depth=5`:       max depth to show when displaying the tree
+
+- `rng=Random.GLOBAL_RNG`: random number generator or seed
+
+- `pdf_smoothing=0.0`: threshold for smoothing the predicted scores.
+  Raw leaf-based probabilities are smoothed as follows: If `n` is the
+  number of observed classes, then each class probability is replaced
+  by `pdf_smoothing/n`, if it falls below that ratio, and the
+  resulting vector of probabilities is renormalized. Smoothing is only
+  applied to classes actually observed in training. Unseen classes
+  retain zero-probability predictions.
+
+
+# Operations
+
+- `predict(mach, Xnew)`: return predictions of the target given
+  features `Xnew` having the same scitype as `X` above. Predictions
+  are probabilistic, but uncalibrated.
+
+- `predict_mode(mach, Xnew)`: instead return the mode of each
+  prediction above.
+
+
+# Fitted parameters
+
+The fields of `fitted_params(mach)` are:
+
+- `tree`: the tree or stump object returned by the core DecisionTree.jl algorithm
+
+- `encoding`: dictionary of target classes keyed on integers used
+  internally by DecisionTree.jl; needed to interpret pretty printing
+  of tree (obtained by calling `fit!(mach, verbosity=2)` or from
+  report - see below)
+
+
+# Report
+
+The fields of `report(mach)` are:
+
+- `classes_seen`: list of target classes actually observed in training
+
+- `print_tree`: method to print a pretty representation of the fitted
+  tree, with single argument the tree depth; interpretation requires
+  internal integer-class encoding (see "Fitted parameters" above).
+
+
+# Examples
+
+```
+using MLJ
+Tree = @load DecisionTreeClassifier pkg=DecisionTree
+tree = Tree(max_depth=4, min_samples_split=3)
+
+X, y = @load_iris
+mach = machine(tree, X, y) |> fit!
+
+Xnew = (sepal_length = [6.4, 7.2, 7.4],
+        sepal_width = [2.8, 3.0, 2.8],
+        petal_length = [5.6, 5.8, 6.1],
+        petal_width = [2.1, 1.6, 1.9],)
+yhat = predict(mach, Xnew) # probabilistic predictions
+predict_mode(mach, Xnew)   # point predictions
+pdf.(yhat, "virginica")    # probabilities for the "verginica" class
+
+fitted_params(mach).tree # raw tree or stump object from DecisionTrees.jl
+
+julia> report(mach).print_tree(3)
+Feature 4, Threshold 0.8
+L-> 1 : 50/50
+R-> Feature 4, Threshold 1.75
+    L-> Feature 3, Threshold 4.95
+        L->
+        R->
+    R-> Feature 3, Threshold 4.85
+        L->
+        R-> 3 : 43/43
+```
+
+To interpret the internal class labelling:
+
+```
+julia> fitted_params(mach).encoding
+Dict{CategoricalArrays.CategoricalValue{String, UInt32}, UInt32} with 3 entries:
+  "virginica"  => 0x00000003
+  "setosa"     => 0x00000001
+  "versicolor" => 0x00000002
+```
+
+See also
+[DecisionTree.jl](https://github.com/bensadeghi/DecisionTree.jl) and
+the unwrapped model type [`MLJDecisionTreeInterface.DecisionTree.DecisionTreeClassifier`](@ref).
+
+"""
+DecisionTreeClassifier
+
+"""
+$(MMI.doc_header(RandomForestClassifier))
+
+# Training data
+
+In MLJ or MLJBase, bind an instance `model` to data with
+
+    mach = machine(model, X, y)
+
+where
+
+- `X`: any table of input features (eg, a `DataFrame`) whose columns
+  each have one of the following element scitypes: `Continuous`,
+  `Count`, or `<:OrderedFactor`.
+
+- `y`: the target, which can be any `AbstractVector` whose element
+  scitype is `<:OrderedFactor` or `<:Multiclass`.
+
+Train the machine with `fit!(mach, rows=...)`.
+
+
+# Hyper-parameters
+
+- `max_depth=-1`:          max depth of the decision tree (-1=any)
+
+- `min_samples_leaf=1`:    min number of samples each leaf needs to have
+
+- `min_samples_split=2`:   min number of samples needed for a split
+
+- `min_purity_increase=0`: min purity needed for a split
+
+- `n_subfeatures=-1`: number of features to select at random (0 for all,
+  -1 for square root of number of features)
+
+- `n_trees=10`:            number of trees to train
+
+- `sampling_fraction=0.7`  fraction of samples to train each tree on
+
+- `rng=Random.GLOBAL_RNG`: random number generator or seed
+
+- `pdf_smoothing=0.0`: threshold for smoothing the predicted scores of
+  each tree.  See [`DecisionTreeClassifier`](@ref)
+
+
+# Operations
+
+- `predict(mach, Xnew)`: return predictions of the target given
+  features `Xnew` having the same scitype as `X` above. Predictions
+  are probabilistic, but uncalibrated.
+
+- `predict_mode(mach, Xnew)`: instead return the mode of each
+  prediction above.
+
+
+# Fitted parameters
+
+The fields of `fitted_params(mach)` are:
+
+- `forest`: the `Ensemble` object returned by the core DecisionTree.jl algorithm
+
+
+# Examples
+
+```
+using MLJ
+Forest = @load RandomForestClassifier pkg=DecisionTree
+forest = Forest(min_samples_split=6, n_subfeatures=3)
+
+X, y = @load_iris
+mach = machine(forest, X, y) |> fit!
+
+Xnew = (sepal_length = [6.4, 7.2, 7.4],
+        sepal_width = [2.8, 3.0, 2.8],
+        petal_length = [5.6, 5.8, 6.1],
+        petal_width = [2.1, 1.6, 1.9],)
+yhat = predict(mach, Xnew) # probabilistic predictions
+predict_mode(mach, Xnew)   # point predictions
+pdf.(yhat, "virginica")    # probabilities for the "verginica" class
+
+fitted_params(mach).forest # raw `Ensemble` object from DecisionTrees.jl
+```
+See also
+[DecisionTree.jl](https://github.com/bensadeghi/DecisionTree.jl) and
+the unwrapped model type
+[`MLJDecisionTreeInterface.DecisionTree.RandomForestClassifier`](@ref).
+
+"""
+RandomForestClassifier
+
+"""
+$(MMI.doc_header(AdaBoostStumpClassifier))
+
+# Training data
+
+In MLJ or MLJBase, bind an instance `model` to data with
+
+    mach = machine(model, X, y)
+
+where:
+
+- `X`: any table of input features (eg, a `DataFrame`) whose columns
+  each have one of the following element scitypes: `Continuous`,
+  `Count`, or `<:OrderedFactor`.
+
+- `y`: the target, which can be any `AbstractVector` whose element
+  scitype is `<:OrderedFactor` or `<:Multiclass`.
+
+Train the machine with `fit!(mach, rows=...)`.
+
+
+# Hyper-parameters
+
+- `n_iter=10`:   number of iterations of AdaBoost
+
+- `pdf_smoothing=0.0`: threshold for smoothing the predicted scores.
+  See [`DecisionTreeClassifier`](@ref)
+
+
+# Operations
+
+- `predict(mach, Xnew)`: return predictions of the target given
+  features `Xnew` having the same scitype as `X` above. Predictions
+  are probabilistic, but uncalibrated.
+
+- `predict_mode(mach, Xnew)`: instead return the mode of each
+  prediction above.
+
+
+# Fitted Parameters
+
+The fields of `fitted_params(mach)` are:
+
+- `stumps`: the `Ensemble` object returned by the core DecisionTree.jl
+  algorithm.
+
+- `coefficients`: the stump coefficients (one per stump)
+
+```
+using MLJ
+Booster = @load AdaBoostStumpClassifier pkg=DecisionTree
+booster = Booster(n_iter=15)
+
+X, y = @load_iris
+mach = machine(booster, X, y) |> fit!
+
+Xnew = (sepal_length = [6.4, 7.2, 7.4],
+        sepal_width = [2.8, 3.0, 2.8],
+        petal_length = [5.6, 5.8, 6.1],
+        petal_width = [2.1, 1.6, 1.9],)
+yhat = predict(mach, Xnew) # probabilistic predictions
+predict_mode(mach, Xnew)   # point predictions
+pdf.(yhat, "virginica")    # probabilities for the "verginica" class
+
+fitted_params(mach).stumps # raw `Ensemble` object from DecisionTree.jl
+fitted_params(mach).coefs  # coefficient associated with each stump
+```
+
+See also
+[DecisionTree.jl](https://github.com/bensadeghi/DecisionTree.jl) and
+the unwrapped model type
+[`MLJDecisionTreeInterface.DecisionTree.AdaBoostStumpClassifier`](@ref).
+
+"""
+AdaBoostStumpClassifier
+
+"""
+$(MMI.doc_header(DecisionTreeRegressor))
+
+# Training data
+
+In MLJ or MLJBase, bind an instance `model` to data with
+
+    mach = machine(model, X, y)
+
+where
+
+- `X`: any table of input features (eg, a `DataFrame`) whose columns
+  each have one of the following element scitypes: `Continuous`,
+  `Count`, or `<:OrderedFactor`.
+
+- `y`: the target, which can be any `AbstractVector` whose element
+  scitype is `Continuous`.
+
+Train the machine with `fit!(mach, rows=...)`.
+
+
+# Hyper-parameters
+
+- `max_depth=-1`:          max depth of the decision tree (-1=any)
+
+- `min_samples_leaf=1`:    max number of samples each leaf needs to have
+
+- `min_samples_split=2`:   min number of samples needed for a split
+
+- `min_purity_increase=0`: min purity needed for a split
+
+- `n_subfeatures=0`: number of features to select at random (0 for all,
+  -1 for square root of number of features)
+
+- `post_prune=false`:      set to `true` for post-fit pruning
+
+- `merge_purity_threshold=1.0`: (post-pruning) merge leaves having
+                           combined purity `>= merge_purity_threshold`
+
+- `rng=Random.GLOBAL_RNG`: random number generator or seed
+
+
+# Operations
+
+- `predict(mach, Xnew)`: return predictions of the target given new
+  features `Xnew` having the same scitype as `X` above.
+
+
+# Fitted parameters
+
+The fields of `fitted_params(mach)` are:
+
+- `tree`: the tree or stump object returned by the core
+  DecisionTree.jl algorithm
+
+
+# Examples
+
+```
+using MLJ
+Tree = @load DecisionTreeRegressor pkg=DecisionTree
+tree = Tree(max_depth=4, min_samples_split=3)
+
+X, y = make_regression(100, 2) # synthetic data
+mach = machine(tree, X, y) |> fit!
+
+Xnew, _ = make_regression(3, 2)
+yhat = predict(mach, Xnew) # new predictions
+
+fitted_params(mach).tree # raw tree or stump object from DecisionTree.jl
+```
+
+See also
+[DecisionTree.jl](https://github.com/bensadeghi/DecisionTree.jl) and
+the unwrapped model type
+[`MLJDecisionTreeInterface.DecisionTree.DecisionTreeRegressor`](@ref).
+
+"""
+DecisionTreeRegressor
+
+"""
+$(MMI.doc_header(RandomForestRegressor))
+
+# Training data
+
+In MLJ or MLJBase, bind an instance `model` to data with
+
+    mach = machine(model, X, y)
+
+where
+
+- `X`: any table of input features (eg, a `DataFrame`) whose columns
+  each have one of the following element scitypes: `Continuous`,
+  `Count`, or `<:OrderedFactor`.
+
+- `y`: the target, which can be any `AbstractVector` whose element
+  scitype is `Continuous`.
+
+Train the machine with `fit!(mach, rows=...)`.
+
+
+# Hyper-parameters
+
+- `max_depth=-1`:          max depth of the decision tree (-1=any)
+
+- `min_samples_leaf=1`:    min number of samples each leaf needs to have
+
+- `min_samples_split=2`:   min number of samples needed for a split
+
+- `min_purity_increase=0`: min purity needed for a split
+
+- `n_subfeatures=-1`: number of features to select at random (0 for all,
+  -1 for square root of number of features)
+
+- `n_trees=10`:            number of trees to train
+
+- `sampling_fraction=0.7`  fraction of samples to train each tree on
+
+- `rng=Random.GLOBAL_RNG`: random number generator or seed
+
+
+# Operations
+
+- `predict(mach, Xnew)`: return predictions of the target given new
+  features `Xnew` having the same scitype as `X` above.
+
+
+# Fitted parameters
+
+The fields of `fitted_params(mach)` are:
+
+- `forest`: the `Ensemble` object returned by the core DecisionTree.jl algorithm
+
+
+# Examples
+
+```
+using MLJ
+Forest = @load RandomForestRegressor pkg=DecisionTree
+forest = Forest(max_depth=4, min_samples_split=3)
+
+X, y = make_regression(100, 2) # synthetic data
+mach = machine(forest, X, y) |> fit!
+
+Xnew, _ = make_regression(3, 2)
+yhat = predict(mach, Xnew) # new predictions
+
+fitted_params(mach).forest # raw `Ensemble` object from DecisionTree.jl
+```
+
+See also
+[DecisionTree.jl](https://github.com/bensadeghi/DecisionTree.jl) and
+the unwrapped model type
+[`MLJDecisionTreeInterface.DecisionTree.RandomForestRegressor`](@ref).
+
+"""
+RandomForestRegressor
 
 end # module
