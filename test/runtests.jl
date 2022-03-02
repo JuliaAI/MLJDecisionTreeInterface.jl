@@ -83,7 +83,7 @@ rgs = DecisionTreeRegressor()
 fitresult, _, _ = MLJBase.fit(rgs, 1, X, ycont)
 @test rms(predict(rgs, fitresult, X), ycont) < 1.5
 
-clf = DecisionTreeClassifier(pdf_smoothing=0)
+clf = DecisionTreeClassifier()
 fitresult, _, _ = MLJBase.fit(clf, 1, X, yfinite)
 @test sum(predict(clf, fitresult, X) .== yfinite) == 0 # perfect prediction
 
