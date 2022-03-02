@@ -3,6 +3,7 @@ module MLJDecisionTreeInterface
 import MLJModelInterface
 using MLJModelInterface.ScientificTypesBase
 import DecisionTree
+import Tables
 
 using Random
 import Random.GLOBAL_RNG
@@ -37,14 +38,20 @@ MMI.@mlj_model mutable struct DecisionTreeClassifier <: MMI.Probabilistic
     n_subfeatures::Int           = 0::(_ ≥ -1)
     post_prune::Bool             = false
     merge_purity_threshold::Float64 = 1.0::(_ ≤ 1)
-    pdf_smoothing::Float64       = 0.0::(0 ≤ _ ≤ 1)
     display_depth::Int           = 5::(_ ≥ 1)
     rng::Union{AbstractRNG,Integer} = GLOBAL_RNG
 end
 
 function MMI.fit(m::DecisionTreeClassifier, verbosity::Int, X, y)
+    schema = Tables.schema(X)
     Xmatrix = MMI.matrix(X)
     yplain  = MMI.int(y)
+
+    if schema === nothing
+        features = [Symbol("x$j") for j in 1:size(Xmatrix, 2)]
+    else
+        features = schema.names |> collect
+    end
 
     classes_seen  = filter(in(unique(y)), MMI.classes(y[1]))
     integers_seen = MMI.int(classes_seen)
@@ -61,11 +68,12 @@ function MMI.fit(m::DecisionTreeClassifier, verbosity::Int, X, y)
     end
     verbosity < 2 || DT.print_tree(tree, m.display_depth)
 
-    fitresult = (tree, classes_seen, integers_seen)
+    fitresult = (tree, classes_seen, integers_seen, features)
 
     cache  = nothing
     report = (classes_seen=classes_seen,
-              print_tree=TreePrinter(tree))
+              print_tree=TreePrinter(tree),
+              features=features)
 
     return fitresult, cache, report
 end
@@ -76,7 +84,9 @@ function get_encoding(classes_seen)
 end
 
 MMI.fitted_params(::DecisionTreeClassifier, fitresult) =
-    (tree=fitresult[1], encoding=get_encoding(fitresult[2]))
+    (tree=fitresult[1],
+     encoding=get_encoding(fitresult[2]),
+     features=fitresult[4])
 
 function smooth(scores, smoothing)
     iszero(smoothing) && return scores
@@ -92,10 +102,9 @@ function MMI.predict(m::DecisionTreeClassifier, fitresult, Xnew)
     tree, classes_seen, integers_seen = fitresult
     # retrieve the predicted scores
     scores = DT.apply_tree_proba(tree, Xmatrix, integers_seen)
-    # smooth if required
-    sm_scores = smooth(scores, m.pdf_smoothing)
+
     # return vector of UF
-    return MMI.UnivariateFinite(classes_seen, sm_scores)
+    return MMI.UnivariateFinite(classes_seen, scores)
 end
 
 
@@ -109,7 +118,6 @@ MMI.@mlj_model mutable struct RandomForestClassifier <: MMI.Probabilistic
     n_subfeatures::Int           = (-)(1)::(_ ≥ -1)
     n_trees::Int                 = 10::(_ ≥ 2)
     sampling_fraction::Float64   = 0.7::(0 < _ ≤ 1)
-    pdf_smoothing::Float64       = 0.0::(0 ≤ _ ≤ 1)
     rng::Union{AbstractRNG,Integer} = GLOBAL_RNG
 end
 
@@ -140,8 +148,7 @@ function MMI.predict(m::RandomForestClassifier, fitresult, Xnew)
     Xmatrix = MMI.matrix(Xnew)
     forest, classes_seen, integers_seen = fitresult
     scores = DT.apply_forest_proba(forest, Xmatrix, integers_seen)
-    sm_scores = smooth(scores, m.pdf_smoothing)
-    return MMI.UnivariateFinite(classes_seen, sm_scores)
+    return MMI.UnivariateFinite(classes_seen, scores)
 end
 
 
@@ -149,7 +156,6 @@ end
 
 MMI.@mlj_model mutable struct AdaBoostStumpClassifier <: MMI.Probabilistic
     n_iter::Int            = 10::(_ ≥ 1)
-    pdf_smoothing::Float64 = 0.0::(0 ≤ _ ≤ 1)
 end
 
 function MMI.fit(m::AdaBoostStumpClassifier, verbosity::Int, X, y)
@@ -174,8 +180,7 @@ function MMI.predict(m::AdaBoostStumpClassifier, fitresult, Xnew)
     stumps, coefs, classes_seen, integers_seen = fitresult
     scores = DT.apply_adaboost_stumps_proba(stumps, coefs,
                                             Xmatrix, integers_seen)
-    sm_scores = smooth(scores, m.pdf_smoothing)
-    return MMI.UnivariateFinite(classes_seen, sm_scores)
+    return MMI.UnivariateFinite(classes_seen, scores)
 end
 
 
@@ -228,7 +233,6 @@ MMI.@mlj_model mutable struct RandomForestRegressor <: MMI.Deterministic
     n_subfeatures::Int           = (-)(1)::(_ ≥ -1)
     n_trees::Int                 = 10::(_ ≥ 2)
     sampling_fraction::Float64   = 0.7::(0 < _ ≤ 1)
-    pdf_smoothing::Float64       = 0.0::(0 ≤ _ ≤ 1)
     rng::Union{AbstractRNG,Integer} = GLOBAL_RNG
 end
 
@@ -364,14 +368,6 @@ Train the machine using `fit!(mach, rows=...)`.
 
 - `rng=Random.GLOBAL_RNG`: random number generator or seed
 
-- `pdf_smoothing=0.0`: threshold for smoothing the predicted scores.
-  Raw leaf-based probabilities are smoothed as follows: If `n` is the
-  number of observed classes, then each class probability is replaced
-  by `pdf_smoothing/n`, if it falls below that ratio, and the
-  resulting vector of probabilities is renormalized. Smoothing is only
-  applied to classes actually observed in training. Unseen classes
-  retain zero-probability predictions.
-
 
 # Operations
 
@@ -394,6 +390,9 @@ The fields of `fitted_params(mach)` are:
   of tree (obtained by calling `fit!(mach, verbosity=2)` or from
   report - see below)
 
+- `features`: the names of the features encountered in training, in an
+  order consistent with the output of `print_tree` (see below)
+
 
 # Report
 
@@ -404,6 +403,9 @@ The fields of `report(mach)` are:
 - `print_tree`: method to print a pretty representation of the fitted
   tree, with single argument the tree depth; interpretation requires
   internal integer-class encoding (see "Fitted parameters" above).
+
+- `features`: the names of the features encountered in training, in an
+  order consistent with the output of `print_tree` (see below)
 
 
 # Examples
@@ -495,9 +497,6 @@ Train the machine with `fit!(mach, rows=...)`.
 
 - `rng=Random.GLOBAL_RNG`: random number generator or seed
 
-- `pdf_smoothing=0.0`: threshold for smoothing the predicted scores of
-  each tree.  See [`DecisionTreeClassifier`](@ref)
-
 
 # Operations
 
@@ -568,9 +567,6 @@ Train the machine with `fit!(mach, rows=...)`.
 # Hyper-parameters
 
 - `n_iter=10`:   number of iterations of AdaBoost
-
-- `pdf_smoothing=0.0`: threshold for smoothing the predicted scores.
-  See [`DecisionTreeClassifier`](@ref)
 
 
 # Operations
