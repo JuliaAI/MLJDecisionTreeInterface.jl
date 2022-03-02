@@ -3,6 +3,7 @@ module MLJDecisionTreeInterface
 import MLJModelInterface
 using MLJModelInterface.ScientificTypesBase
 import DecisionTree
+import Tables
 
 using Random
 import Random.GLOBAL_RNG
@@ -43,8 +44,15 @@ MMI.@mlj_model mutable struct DecisionTreeClassifier <: MMI.Probabilistic
 end
 
 function MMI.fit(m::DecisionTreeClassifier, verbosity::Int, X, y)
+    schema = Tables.schema(X)
     Xmatrix = MMI.matrix(X)
     yplain  = MMI.int(y)
+
+    if schema === nothing
+        features = [Symbol("x$j") for j in 1:size(Xmatrix, 2)]
+    else
+        features = schema.names |> collect
+    end
 
     classes_seen  = filter(in(unique(y)), MMI.classes(y[1]))
     integers_seen = MMI.int(classes_seen)
@@ -61,11 +69,12 @@ function MMI.fit(m::DecisionTreeClassifier, verbosity::Int, X, y)
     end
     verbosity < 2 || DT.print_tree(tree, m.display_depth)
 
-    fitresult = (tree, classes_seen, integers_seen)
+    fitresult = (tree, classes_seen, integers_seen, features)
 
     cache  = nothing
     report = (classes_seen=classes_seen,
-              print_tree=TreePrinter(tree))
+              print_tree=TreePrinter(tree),
+              features=features)
 
     return fitresult, cache, report
 end
@@ -76,7 +85,9 @@ function get_encoding(classes_seen)
 end
 
 MMI.fitted_params(::DecisionTreeClassifier, fitresult) =
-    (tree=fitresult[1], encoding=get_encoding(fitresult[2]))
+    (tree=fitresult[1],
+     encoding=get_encoding(fitresult[2]),
+     features=fitresult[4])
 
 function smooth(scores, smoothing)
     iszero(smoothing) && return scores
@@ -394,6 +405,9 @@ The fields of `fitted_params(mach)` are:
   of tree (obtained by calling `fit!(mach, verbosity=2)` or from
   report - see below)
 
+- `features`: the names of the features encountered in training, in an
+  order consistent with the output of `print_tree` (see below)
+
 
 # Report
 
@@ -404,6 +418,9 @@ The fields of `report(mach)` are:
 - `print_tree`: method to print a pretty representation of the fitted
   tree, with single argument the tree depth; interpretation requires
   internal integer-class encoding (see "Fitted parameters" above).
+
+- `features`: the names of the features encountered in training, in an
+  order consistent with the output of `print_tree` (see below)
 
 
 # Examples
