@@ -338,10 +338,11 @@ where
 
 - `X`: any table of input features (eg, a `DataFrame`) whose columns
   each have one of the following element scitypes: `Continuous`,
-  `Count`, or `<:OrderedFactor`.
+  `Count`, or `<:OrderedFactor`; check column scitypes with `schema(X)`
 
 - `y`: is the target, which can be any `AbstractVector` whose element
-  scitype is `<:OrderedFactor` or `<:Multiclass`.
+  scitype is `<:OrderedFactor` or `<:Multiclass`; check the scitype
+  with `scitype(y)`
 
 Train the machine using `fit!(mach, rows=...)`.
 
@@ -470,10 +471,11 @@ where
 
 - `X`: any table of input features (eg, a `DataFrame`) whose columns
   each have one of the following element scitypes: `Continuous`,
-  `Count`, or `<:OrderedFactor`.
+  `Count`, or `<:OrderedFactor`; check column scitypes with `schema(X)`
 
 - `y`: the target, which can be any `AbstractVector` whose element
-  scitype is `<:OrderedFactor` or `<:Multiclass`.
+  scitype is `<:OrderedFactor` or `<:Multiclass`; check the scitype
+  with `scitype(y)`
 
 Train the machine with `fit!(mach, rows=...)`.
 
@@ -556,10 +558,11 @@ where:
 
 - `X`: any table of input features (eg, a `DataFrame`) whose columns
   each have one of the following element scitypes: `Continuous`,
-  `Count`, or `<:OrderedFactor`.
+  `Count`, or `<:OrderedFactor`; check column scitypes with `schema(X)`
 
 - `y`: the target, which can be any `AbstractVector` whose element
-  scitype is `<:OrderedFactor` or `<:Multiclass`.
+  scitype is `<:OrderedFactor` or `<:Multiclass`; check the scitype
+  with `scitype(y)`
 
 Train the machine with `fit!(mach, rows=...)`.
 
@@ -629,10 +632,10 @@ where
 
 - `X`: any table of input features (eg, a `DataFrame`) whose columns
   each have one of the following element scitypes: `Continuous`,
-  `Count`, or `<:OrderedFactor`.
+  `Count`, or `<:OrderedFactor`; check column scitypes with `schema(X)`
 
 - `y`: the target, which can be any `AbstractVector` whose element
-  scitype is `Continuous`.
+  scitype is `Continuous`; check the scitype with `scitype(y)`
 
 Train the machine with `fit!(mach, rows=...)`.
 
@@ -709,10 +712,10 @@ where
 
 - `X`: any table of input features (eg, a `DataFrame`) whose columns
   each have one of the following element scitypes: `Continuous`,
-  `Count`, or `<:OrderedFactor`.
+  `Count`, or `<:OrderedFactor`; check column scitypes with `schema(X)`
 
 - `y`: the target, which can be any `AbstractVector` whose element
-  scitype is `Continuous`.
+  scitype is `Continuous`; check the scitype with `scitype(y)`
 
 Train the machine with `fit!(mach, rows=...)`.
 
