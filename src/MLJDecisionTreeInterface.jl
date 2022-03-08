@@ -325,8 +325,19 @@ MMI.metadata_model(
 
 # # DOCUMENT STRINGS
 
+const DOC_CART = "[CART algorithm](https://en.wikipedia.org/wiki/Decision_tree_learning)"*
+", originally published in Breiman, Leo; Friedman, J. H.; Olshen, R. A.; "*
+"Stone, C. J. (1984): \"Classification and regression trees\". *Monterey, "*
+"CA: Wadsworth & Brooks/Cole Advanced Books & Software.*"
+
+const DOC_RANDOM_FOREST = "[Random Forest algorithm]"*
+    "(https://en.wikipedia.org/wiki/Random_forest), originally published in "*
+    "Breiman, L. (2001): \"Random Forests.\", *Machine Learning*, vol. 45, pp. 5–32"
+
 """
 $(MMI.doc_header(DecisionTreeClassifier))
+
+`DecisionTreeClassifier` implements the $DOC_CART.
 
 # Training data
 
@@ -338,10 +349,11 @@ where
 
 - `X`: any table of input features (eg, a `DataFrame`) whose columns
   each have one of the following element scitypes: `Continuous`,
-  `Count`, or `<:OrderedFactor`.
+  `Count`, or `<:OrderedFactor`; check column scitypes with `schema(X)`
 
 - `y`: is the target, which can be any `AbstractVector` whose element
-  scitype is `<:OrderedFactor` or `<:Multiclass`.
+  scitype is `<:OrderedFactor` or `<:Multiclass`; check the scitype
+  with `scitype(y)`
 
 Train the machine using `fit!(mach, rows=...)`.
 
@@ -460,6 +472,9 @@ DecisionTreeClassifier
 """
 $(MMI.doc_header(RandomForestClassifier))
 
+`RandomForestClassifier` implements the standard $DOC_RANDOM_FOREST.
+
+
 # Training data
 
 In MLJ or MLJBase, bind an instance `model` to data with
@@ -470,10 +485,11 @@ where
 
 - `X`: any table of input features (eg, a `DataFrame`) whose columns
   each have one of the following element scitypes: `Continuous`,
-  `Count`, or `<:OrderedFactor`.
+  `Count`, or `<:OrderedFactor`; check column scitypes with `schema(X)`
 
 - `y`: the target, which can be any `AbstractVector` whose element
-  scitype is `<:OrderedFactor` or `<:Multiclass`.
+  scitype is `<:OrderedFactor` or `<:Multiclass`; check the scitype
+  with `scitype(y)`
 
 Train the machine with `fit!(mach, rows=...)`.
 
@@ -546,6 +562,7 @@ RandomForestClassifier
 """
 $(MMI.doc_header(AdaBoostStumpClassifier))
 
+
 # Training data
 
 In MLJ or MLJBase, bind an instance `model` to data with
@@ -556,10 +573,11 @@ where:
 
 - `X`: any table of input features (eg, a `DataFrame`) whose columns
   each have one of the following element scitypes: `Continuous`,
-  `Count`, or `<:OrderedFactor`.
+  `Count`, or `<:OrderedFactor`; check column scitypes with `schema(X)`
 
 - `y`: the target, which can be any `AbstractVector` whose element
-  scitype is `<:OrderedFactor` or `<:Multiclass`.
+  scitype is `<:OrderedFactor` or `<:Multiclass`; check the scitype
+  with `scitype(y)`
 
 Train the machine with `fit!(mach, rows=...)`.
 
@@ -619,6 +637,9 @@ AdaBoostStumpClassifier
 """
 $(MMI.doc_header(DecisionTreeRegressor))
 
+`DecisionTreeRegressor` implements the $DOC_CART.
+
+
 # Training data
 
 In MLJ or MLJBase, bind an instance `model` to data with
@@ -629,10 +650,10 @@ where
 
 - `X`: any table of input features (eg, a `DataFrame`) whose columns
   each have one of the following element scitypes: `Continuous`,
-  `Count`, or `<:OrderedFactor`.
+  `Count`, or `<:OrderedFactor`; check column scitypes with `schema(X)`
 
 - `y`: the target, which can be any `AbstractVector` whose element
-  scitype is `Continuous`.
+  scitype is `Continuous`; check the scitype with `scitype(y)`
 
 Train the machine with `fit!(mach, rows=...)`.
 
@@ -699,6 +720,9 @@ DecisionTreeRegressor
 """
 $(MMI.doc_header(RandomForestRegressor))
 
+`DecisionTreeRegressor` implements the standard $DOC_RANDOM_FOREST
+
+
 # Training data
 
 In MLJ or MLJBase, bind an instance `model` to data with
@@ -709,10 +733,10 @@ where
 
 - `X`: any table of input features (eg, a `DataFrame`) whose columns
   each have one of the following element scitypes: `Continuous`,
-  `Count`, or `<:OrderedFactor`.
+  `Count`, or `<:OrderedFactor`; check column scitypes with `schema(X)`
 
 - `y`: the target, which can be any `AbstractVector` whose element
-  scitype is `Continuous`.
+  scitype is `Continuous`; check the scitype with `scitype(y)`
 
 Train the machine with `fit!(mach, rows=...)`.
 
