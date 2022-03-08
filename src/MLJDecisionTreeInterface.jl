@@ -325,8 +325,19 @@ MMI.metadata_model(
 
 # # DOCUMENT STRINGS
 
+const DOC_CART = "[CART algorithm](https://en.wikipedia.org/wiki/Decision_tree_learning)"*
+", originally published in Breiman, Leo; Friedman, J. H.; Olshen, R. A.; "*
+"Stone, C. J. (1984): \"Classification and regression trees\". *Monterey, "*
+"CA: Wadsworth & Brooks/Cole Advanced Books & Software.*"
+
+const DOC_RANDOM_FOREST = "[Random Forest algorithm]"*
+    "(https://en.wikipedia.org/wiki/Random_forest), originally published in "*
+    "Breiman, L. (2001): \"Random Forests.\", *Machine Learning*, vol. 45, pp. 5–32"
+
 """
 $(MMI.doc_header(DecisionTreeClassifier))
+
+`DecisionTreeClassifier` implements the $DOC_CART.
 
 # Training data
 
@@ -461,6 +472,9 @@ DecisionTreeClassifier
 """
 $(MMI.doc_header(RandomForestClassifier))
 
+`RandomForestClassifier` implements the standard $DOC_RANDOM_FOREST.
+
+
 # Training data
 
 In MLJ or MLJBase, bind an instance `model` to data with
@@ -548,6 +562,7 @@ RandomForestClassifier
 """
 $(MMI.doc_header(AdaBoostStumpClassifier))
 
+
 # Training data
 
 In MLJ or MLJBase, bind an instance `model` to data with
@@ -621,6 +636,9 @@ AdaBoostStumpClassifier
 
 """
 $(MMI.doc_header(DecisionTreeRegressor))
+
+`DecisionTreeRegressor` implements the $DOC_CART.
+
 
 # Training data
 
@@ -701,6 +719,9 @@ DecisionTreeRegressor
 
 """
 $(MMI.doc_header(RandomForestRegressor))
+
+`DecisionTreeRegressor` implements the standard $DOC_RANDOM_FOREST
+
 
 # Training data
 
