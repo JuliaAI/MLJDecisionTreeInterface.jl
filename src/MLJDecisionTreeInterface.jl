@@ -156,6 +156,7 @@ end
 
 MMI.@mlj_model mutable struct AdaBoostStumpClassifier <: MMI.Probabilistic
     n_iter::Int            = 10::(_ ≥ 1)
+    rng::Union{AbstractRNG,Integer} = GLOBAL_RNG
 end
 
 function MMI.fit(m::AdaBoostStumpClassifier, verbosity::Int, X, y)
@@ -165,8 +166,8 @@ function MMI.fit(m::AdaBoostStumpClassifier, verbosity::Int, X, y)
     classes_seen  = filter(in(unique(y)), MMI.classes(y[1]))
     integers_seen = MMI.int(classes_seen)
 
-    stumps, coefs = DT.build_adaboost_stumps(yplain, Xmatrix,
-                                             m.n_iter)
+    stumps, coefs =
+        DT.build_adaboost_stumps(yplain, Xmatrix, m.n_iter, rng=m.rng)
     cache  = nothing
     report = NamedTuple()
     return (stumps, coefs, classes_seen, integers_seen), cache, report
@@ -586,6 +587,7 @@ Train the machine with `fit!(mach, rows=...)`.
 
 - `n_iter=10`:   number of iterations of AdaBoost
 
+- `rng=Random.GLOBAL_RNG`: random number generator or seed
 
 # Operations
 
