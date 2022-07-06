@@ -587,6 +587,7 @@ Train the machine with `fit!(mach, rows=...)`.
 
 - `n_iter=10`:   number of iterations of AdaBoost
 
+- `rng=Random.GLOBAL_RNG`: random number generator or seed
 
 # Operations
 
