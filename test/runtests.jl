@@ -122,7 +122,9 @@ fit!(m)
 
 N = 10
 function reproducibility(model, X, y, loss)
-    model.n_subfeatures = 1
+    if !(model isa AdaBoostStumpClassifier)
+        model.n_subfeatures = 1
+    end
     mach = machine(model, X, y)
     train, test = partition(eachindex(y), 0.7)
     errs = map(1:N) do i
@@ -140,6 +142,7 @@ end
     for model in [
         DecisionTreeClassifier(),
         RandomForestClassifier(),
+        AdaBoostStumpClassifier(),
     ]
         @test reproducibility(model, X, y, loss)
     end
