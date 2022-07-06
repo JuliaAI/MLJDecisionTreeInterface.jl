@@ -2,8 +2,11 @@ using Test
 import CategoricalArrays
 import CategoricalArrays.categorical
 using MLJBase
+using StableRNGs
 using Random
 Random.seed!(1234)
+
+srng() = StableRNGs.StableRNG(123)
 
 # load code to be tested:
 import DecisionTree
@@ -12,7 +15,7 @@ using MLJDecisionTreeInterface
 # get some test data:
 X, y = @load_iris
 
-baretree = DecisionTreeClassifier()
+baretree = DecisionTreeClassifier(rng=srng())
 
 baretree.max_depth = 1
 fitresult, cache, report = MLJBase.fit(baretree, 2, X, y);
@@ -50,13 +53,17 @@ using Random: seed!
 seed!(0)
 
 n,m = 10^3, 5;
-raw_features = rand(n,m);
-weights = rand(-1:1,m);
+raw_features = rand(srng(), n,m);
+weights = rand(srng(), -1:1,m);
 labels = raw_features * weights;
 features = MLJBase.table(raw_features);
 
-R1Tree = DecisionTreeRegressor(min_samples_leaf=5, merge_purity_threshold=0.1)
-R2Tree = DecisionTreeRegressor(min_samples_split=5)
+R1Tree = DecisionTreeRegressor(
+    min_samples_leaf=5,
+    merge_purity_threshold=0.1,
+    rng=srng(),
+)
+R2Tree = DecisionTreeRegressor(min_samples_split=5, rng=srng())
 model1, = MLJBase.fit(R1Tree,1, features, labels)
 
 vals1 = MLJBase.predict(R1Tree,model1,features)
@@ -75,11 +82,15 @@ vals2 = MLJBase.predict(R2Tree, model2, features)
 ## TEST ON ORDINAL FEATURES OTHER THAN CONTINUOUS
 
 N = 20
-X = (x1=rand(N), x2=categorical(rand("abc", N), ordered=true), x3=collect(1:N))
+X = (
+    x1=rand(srng(),N),
+    x2=categorical(rand(srng(), "abc", N), ordered=true),
+    x3=collect(1:N),
+)
 yfinite = X.x2
 ycont = float.(X.x3)
 
-rgs = DecisionTreeRegressor()
+rgs = DecisionTreeRegressor(rng=srng())
 fitresult, _, _ = MLJBase.fit(rgs, 1, X, ycont)
 @test rms(predict(rgs, fitresult, X), ycont) < 1.5
 
@@ -90,10 +101,10 @@ fitresult, _, _ = MLJBase.fit(clf, 1, X, yfinite)
 
 # --  Ensemble
 
-rfc = RandomForestClassifier()
-abs = AdaBoostStumpClassifier()
+rfc = RandomForestClassifier(rng=srng())
+abs = AdaBoostStumpClassifier(rng=srng())
 
-X, y = MLJBase.make_blobs(100, 3; rng=555)
+X, y = MLJBase.make_blobs(100, 3; rng=srng())
 
 m = machine(rfc, X, y)
 fit!(m)
@@ -103,15 +114,15 @@ m = machine(abs, X, y)
 fit!(m)
 @test accuracy(predict_mode(m, X), y) > 0.95
 
-X, y = MLJBase.make_regression(rng=5124)
-rfr = RandomForestRegressor()
+X, y = MLJBase.make_regression(rng=srng())
+rfr = RandomForestRegressor(rng=srng())
 m = machine(rfr, X, y)
 fit!(m)
 @test rms(predict(m, X), y) < 0.4
 
 N = 10
 function reproducibility(model, X, y, loss)
-    model.rng = 123
+    model.rng = srng()
     model.n_subfeatures = 1
     mach = machine(model, X, y)
     train, test = partition(eachindex(y), 0.7)
@@ -124,14 +135,20 @@ function reproducibility(model, X, y, loss)
 end
 
 @testset "reporoducibility" begin
-    X, y = make_blobs();
+    X, y = make_blobs(rng=srng());
     loss = BrierLoss()
-    for model in [DecisionTreeClassifier(), RandomForestClassifier()]
+    for model in [
+        DecisionTreeClassifier(rng=srng()),
+        RandomForestClassifier(rng=srng()),
+    ]
         @test reproducibility(model, X, y, loss)
     end
-    X, y = make_regression();
+    X, y = make_regression(rng=srng());
     loss = LPLoss(p=2)
-    for model in [DecisionTreeRegressor(), RandomForestRegressor()]
+    for model in [
+        DecisionTreeRegressor(rng=srng()),
+        RandomForestRegressor(rng=srng()),
+    ]
         @test reproducibility(model, X, y, loss)
     end
 end
