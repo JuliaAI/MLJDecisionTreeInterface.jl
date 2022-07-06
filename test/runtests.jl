@@ -122,11 +122,11 @@ fit!(m)
 
 N = 10
 function reproducibility(model, X, y, loss)
-    model.rng = srng()
     model.n_subfeatures = 1
     mach = machine(model, X, y)
     train, test = partition(eachindex(y), 0.7)
     errs = map(1:N) do i
+        model.rng = srng()
         fit!(mach, rows=train, force=true, verbosity=0)
         yhat = predict(mach, rows=test)
         loss(yhat, y[test]) |> mean
@@ -138,16 +138,16 @@ end
     X, y = make_blobs(rng=srng());
     loss = BrierLoss()
     for model in [
-        DecisionTreeClassifier(rng=srng()),
-        RandomForestClassifier(rng=srng()),
+        DecisionTreeClassifier(),
+        RandomForestClassifier(),
     ]
         @test reproducibility(model, X, y, loss)
     end
     X, y = make_regression(rng=srng());
     loss = LPLoss(p=2)
     for model in [
-        DecisionTreeRegressor(rng=srng()),
-        RandomForestRegressor(rng=srng()),
+        DecisionTreeRegressor(),
+        RandomForestRegressor(),
     ]
         @test reproducibility(model, X, y, loss)
     end
