@@ -120,6 +120,28 @@ rpt = MLJBase.report(m)
 m = machine(abs, X, y)
 fit!(m)
 @test accuracy(predict_mode(m, X), y) > 0.95
+# check feature_importances
+rpt = MLJBase.report(m)
+@test size(rpt.feature_importances, 1) == 3  # make sure we get an importance for each feature
+
+
+
+
+# test DecisionTreeRegressor and RandomForestRegressor
+X, y = make_regression(100,3; rng=stable_rng());
+dtr = DecisionTreeRegressor(rng=stable_rng())
+rfr = RandomForestRegressor(rng=stable_rng())
+
+m = machine(dtr, X, y)
+fit!(m)
+rpt = MLJBase.report(m)
+@test size(rpt.feature_importances, 1) == 3  # make sure we get an importance for each feature
+
+m = machine(rfr, X, y)
+fit!(m)
+rpt = MLJBase.report(m)
+@test size(rpt.feature_importances, 1) == 3  # make sure we get an importance for each feature
+
 
 X, y = MLJBase.make_regression(rng=stable_rng())
 rfr = RandomForestRegressor(rng=stable_rng())

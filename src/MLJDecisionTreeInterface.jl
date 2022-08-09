@@ -182,8 +182,16 @@ MMI.@mlj_model mutable struct AdaBoostStumpClassifier <: MMI.Probabilistic
 end
 
 function MMI.fit(m::AdaBoostStumpClassifier, verbosity::Int, X, y)
+    schema = Tables.schema(X)
     Xmatrix = MMI.matrix(X)
     yplain  = MMI.int(y)
+
+    if schema === nothing
+        features = [Symbol("x$j") for j in 1:size(Xmatrix, 2)]
+    else
+        features = schema.names |> collect
+    end
+
 
     classes_seen  = filter(in(unique(y)), MMI.classes(y[1]))
     integers_seen = MMI.int(classes_seen)
@@ -191,7 +199,14 @@ function MMI.fit(m::AdaBoostStumpClassifier, verbosity::Int, X, y)
     stumps, coefs =
         DT.build_adaboost_stumps(yplain, Xmatrix, m.n_iter, rng=m.rng)
     cache  = nothing
-    report = NamedTuple()
+
+    fi = DecisionTree.impurity_importance(stumps, coefs)
+    fi_pairs = collect(Dict(zip(features, fi)))
+    # sort descending
+    sort!(fi_pairs, by= x->-x[2])
+
+    report = (feature_importances=fi_pairs,)
+    # report = NamedTuple()
     return (stumps, coefs, classes_seen, integers_seen), cache, report
 end
 
@@ -221,7 +236,15 @@ MMI.@mlj_model mutable struct DecisionTreeRegressor <: MMI.Deterministic
 end
 
 function MMI.fit(m::DecisionTreeRegressor, verbosity::Int, X, y)
+    schema = Tables.schema(X)
     Xmatrix = MMI.matrix(X)
+
+    if schema === nothing
+        features = [Symbol("x$j") for j in 1:size(Xmatrix, 2)]
+    else
+        features = schema.names |> collect
+    end
+
     tree    = DT.build_tree(float(y), Xmatrix,
                             m.n_subfeatures,
                             m.max_depth,
@@ -234,7 +257,14 @@ function MMI.fit(m::DecisionTreeRegressor, verbosity::Int, X, y)
         tree = DT.prune_tree(tree, m.merge_purity_threshold)
     end
     cache  = nothing
-    report = NamedTuple()
+
+    fi = DecisionTree.impurity_importance(tree)
+    fi_pairs = collect(Dict(zip(features, fi)))
+    # sort descending
+    sort!(fi_pairs, by= x->-x[2])
+
+    report = (feature_importances=fi_pairs,)
+    # report = NamedTuple()
     return tree, cache, report
 end
 
@@ -260,7 +290,15 @@ MMI.@mlj_model mutable struct RandomForestRegressor <: MMI.Deterministic
 end
 
 function MMI.fit(m::RandomForestRegressor, verbosity::Int, X, y)
+    schema = Tables.schema(X)
     Xmatrix = MMI.matrix(X)
+
+    if schema === nothing
+        features = [Symbol("x$j") for j in 1:size(Xmatrix, 2)]
+    else
+        features = schema.names |> collect
+    end
+
     forest  = DT.build_forest(float(y), Xmatrix,
                               m.n_subfeatures,
                               m.n_trees,
@@ -271,7 +309,16 @@ function MMI.fit(m::RandomForestRegressor, verbosity::Int, X, y)
                               m.min_purity_increase,
                               rng=m.rng)
     cache  = nothing
-    report = NamedTuple()
+
+
+    fi = DecisionTree.impurity_importance(forest)
+    fi_pairs = collect(Dict(zip(features, fi)))
+    # sort descending
+    sort!(fi_pairs, by= x->-x[2])
+
+    report = (feature_importances=fi_pairs,)
+    # report = NamedTuple()
+
     return forest, cache, report
 end
 
