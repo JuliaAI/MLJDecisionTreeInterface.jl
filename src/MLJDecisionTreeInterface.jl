@@ -130,8 +130,15 @@ MMI.@mlj_model mutable struct RandomForestClassifier <: MMI.Probabilistic
 end
 
 function MMI.fit(m::RandomForestClassifier, verbosity::Int, X, y)
+    schema = Tables.schema(X)
     Xmatrix = MMI.matrix(X)
     yplain  = MMI.int(y)
+
+    if schema === nothing
+        features = [Symbol("x$j") for j in 1:size(Xmatrix, 2)]
+    else
+        features = schema.names |> collect
+    end
 
     classes_seen  = filter(in(unique(y)), MMI.classes(y[1]))
     integers_seen = MMI.int(classes_seen)
@@ -146,7 +153,14 @@ function MMI.fit(m::RandomForestClassifier, verbosity::Int, X, y)
                              m.min_purity_increase;
                              rng=m.rng)
     cache  = nothing
-    report = NamedTuple()
+
+    fi = DecisionTree.impurity_importance(forest)
+    fi_pairs = collect(Dict(zip(features, fi)))
+    # sort descending
+    sort!(fi_pairs, by= x->-x[2])
+
+    report = (feature_importances=fi_pairs,)
+    # report = NamedTuple()
     return (forest, classes_seen, integers_seen), cache, report
 end
 

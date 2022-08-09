@@ -112,6 +112,10 @@ X, y = MLJBase.make_blobs(100, 3; rng=stable_rng())
 m = machine(rfc, X, y)
 fit!(m)
 @test accuracy(predict_mode(m, X), y) > 0.95
+# check feature_importances
+rpt = MLJBase.report(m)
+@test size(rpt.feature_importances, 1) == 3  # make sure we get an importance for each feature
+
 
 m = machine(abs, X, y)
 fit!(m)
