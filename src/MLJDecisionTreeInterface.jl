@@ -71,9 +71,17 @@ function MMI.fit(m::DecisionTreeClassifier, verbosity::Int, X, y)
     fitresult = (tree, classes_seen, integers_seen, features)
 
     cache  = nothing
+
+    # generate feature importances for report
+    fi = DecisionTree.impurity_importance(tree)
+    fi_pairs = collect(Dict(zip(features, fi)))
+    # sort descending
+    sort!(fi_pairs, by= x->-x[2])
+
     report = (classes_seen=classes_seen,
               print_tree=TreePrinter(tree),
-              features=features)
+              features=features,
+              feature_importances=fi_pairs)
 
     return fitresult, cache, report
 end

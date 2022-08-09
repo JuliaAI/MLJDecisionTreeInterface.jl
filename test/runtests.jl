@@ -41,10 +41,13 @@ yyhat = predict_mode(baretree, fitresult, MLJBase.selectrows(X, 1:3))
 @test MLJBase.classes(yyhat[1]) == MLJBase.classes(y[1])
 
 # check report and fitresult fields:
-@test Set([:classes_seen, :print_tree, :features]) == Set(keys(report))
+@test Set([:classes_seen, :print_tree, :features, :feature_importances]) == Set(keys(report))
 @test Set(report.classes_seen) == Set(levels(y))
 @test report.print_tree(2) === nothing # :-(
 @test report.features == [:sepal_length, :sepal_width, :petal_length, :petal_width]
+# check feature_importances
+@test size(report.features,1) == size(report.feature_importances, 1)
+
 fp = fitted_params(baretree, fitresult)
 @test Set([:tree, :encoding, :features]) == Set(keys(fp))
 @test fp.features == report.features
