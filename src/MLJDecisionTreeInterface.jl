@@ -122,9 +122,9 @@ MMI.reports_feature_importances(::Type{<:DecisionTreeClassifier}) = true
 function MMI.feature_importances(m::DecisionTreeClassifier, fitresult, report)
     # generate feature importances for report
     if m.feature_importance == :impurity
-        feature_importance_func = DecisionTree.impurity_importance
+        feature_importance_func = DT.impurity_importance
     elseif m.feature_importance == :split
-        feature_importance_func = DecisionTree.split_importance
+        feature_importance_func = DT.split_importance
     end
 
     tree = fitresult[1]
@@ -197,9 +197,9 @@ MMI.reports_feature_importances(::Type{<:RandomForestClassifier}) = true
 function MMI.feature_importances(m::RandomForestClassifier, fitresult, report)
     # generate feature importances for report
     if m.feature_importance == :impurity
-        feature_importance_func = DecisionTree.impurity_importance
+        feature_importance_func = DT.impurity_importance
     elseif m.feature_importance == :split
-        feature_importance_func = DecisionTree.split_importance
+        feature_importance_func = DT.split_importance
     end
 
     forest = fitresult[1]
@@ -263,9 +263,9 @@ MMI.reports_feature_importances(::Type{<:AdaBoostStumpClassifier}) = true
 function MMI.feature_importances(m::AdaBoostStumpClassifier, fitresult, report)
     # generate feature importances for report
     if m.feature_importance == :impurity
-        feature_importance_func = DecisionTree.impurity_importance
+        feature_importance_func = DT.impurity_importance
     elseif m.feature_importance == :split
-        feature_importance_func = DecisionTree.split_importance
+        feature_importance_func = DT.split_importance
     end
 
     stumps = fitresult[1]
@@ -334,9 +334,9 @@ MMI.reports_feature_importances(::Type{<:DecisionTreeRegressor}) = true
 function MMI.feature_importances(m::DecisionTreeRegressor, fitresult, report)
     # generate feature importances for report
     if m.feature_importance == :impurity
-        feature_importance_func = DecisionTree.impurity_importance
+        feature_importance_func = DT.impurity_importance
     elseif m.feature_importance == :split
-        feature_importance_func = DecisionTree.split_importance
+        feature_importance_func = DT.split_importance
     end
 
     tree = fitresult
@@ -401,9 +401,9 @@ MMI.reports_feature_importances(::Type{<:RandomForestRegressor}) = true
 function MMI.feature_importances(m::RandomForestRegressor, fitresult, report)
     # generate feature importances for report
     if m.feature_importance == :impurity
-        feature_importance_func = DecisionTree.impurity_importance
+        feature_importance_func = DT.impurity_importance
     elseif m.feature_importance == :split
-        feature_importance_func = DecisionTree.split_importance
+        feature_importance_func = DT.split_importance
     end
 
     forest = fitresult
@@ -534,6 +534,8 @@ Train the machine using `fit!(mach, rows=...)`.
                            combined purity `>= merge_purity_threshold`
 
 - `display_depth=5`:       max depth to show when displaying the tree
+
+- `feature_importance`:    method to use for computing feature importances
 
 - `rng=Random.GLOBAL_RNG`: random number generator or seed
 
@@ -668,6 +670,8 @@ Train the machine with `fit!(mach, rows=...)`.
 
 - `sampling_fraction=0.7`  fraction of samples to train each tree on
 
+- `feature_importance`:    method to use for computing feature importances
+
 - `rng=Random.GLOBAL_RNG`: random number generator or seed
 
 
@@ -742,6 +746,8 @@ Train the machine with `fit!(mach, rows=...)`.
 # Hyper-parameters
 
 - `n_iter=10`:   number of iterations of AdaBoost
+
+- `feature_importance`:    method to use for computing feature importances
 
 - `rng=Random.GLOBAL_RNG`: random number generator or seed
 
@@ -834,6 +840,8 @@ Train the machine with `fit!(mach, rows=...)`.
 - `merge_purity_threshold=1.0`: (post-pruning) merge leaves having
                            combined purity `>= merge_purity_threshold`
 
+- `feature_importance`:    method to use for computing feature importances
+
 - `rng=Random.GLOBAL_RNG`: random number generator or seed
 
 
@@ -915,6 +923,8 @@ Train the machine with `fit!(mach, rows=...)`.
 - `n_trees=10`:            number of trees to train
 
 - `sampling_fraction=0.7`  fraction of samples to train each tree on
+
+- `feature_importance`:    method to use for computing feature importances
 
 - `rng=Random.GLOBAL_RNG`: random number generator or seed
 

@@ -225,8 +225,6 @@ end
         fit!(m)
         rpt = MLJBase.report(m)
         fi = MLJBase.feature_importances(model, m.fitresult, rpt)
-
-        println(fi)
         @test size(fi,1) == 3
     end
 
