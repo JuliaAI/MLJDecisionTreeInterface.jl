@@ -130,7 +130,7 @@ function MMI.feature_importances(m::DecisionTreeClassifier, fitresult, report)
     tree = fitresult[1]
     features = fitresult[end]
     fi = feature_importance_func(tree)
-    fi_pairs = collect(Dict(zip(features, fi)))
+    fi_pairs = Pair.(features, fi)
     # sort descending
     sort!(fi_pairs, by= x->-x[2])
 
@@ -205,7 +205,7 @@ function MMI.feature_importances(m::RandomForestClassifier, fitresult, report)
     forest = fitresult[1]
     features = report.features
     fi = feature_importance_func(forest)
-    fi_pairs = collect(Dict(zip(features, fi)))
+    fi_pairs = Pair.(features, fi)
     # sort descending
     sort!(fi_pairs, by= x->-x[2])
 
@@ -272,7 +272,7 @@ function MMI.feature_importances(m::AdaBoostStumpClassifier, fitresult, report)
     coefs = fitresult[2]
     features = report.features
     fi = feature_importance_func(stumps, coefs)
-    fi_pairs = collect(Dict(zip(features, fi)))
+    fi_pairs = Pair.(features, fi)
     # sort descending
     sort!(fi_pairs, by= x->-x[2])
 
@@ -342,7 +342,7 @@ function MMI.feature_importances(m::DecisionTreeRegressor, fitresult, report)
     tree = fitresult
     features = report.features
     fi = feature_importance_func(tree)
-    fi_pairs = collect(Dict(zip(features, fi)))
+    fi_pairs = Pair.(features, fi)
     # sort descending
     sort!(fi_pairs, by= x->-x[2])
 
@@ -409,7 +409,7 @@ function MMI.feature_importances(m::RandomForestRegressor, fitresult, report)
     forest = fitresult
     features = report.features
     fi = feature_importance_func(forest)
-    fi_pairs = collect(Dict(zip(features, fi)))
+    fi_pairs = Pair.(features, fi)
     # sort descending
     sort!(fi_pairs, by= x->-x[2])
 
