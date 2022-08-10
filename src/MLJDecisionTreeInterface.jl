@@ -22,11 +22,11 @@ Base.show(stream::IO, c::TreePrinter) =
     print(stream, "TreePrinter object (call with display depth)")
 
 
-# add a new variable to struct a la
-const feature_importance_options = Dict(:impurity => DecisionTree.impurity_importance,
-                                        :split => DecisionTree.split_importance,
-                                     #   :permutation => DecisionTree.permutation_importance,
-                                    )
+# # add a new variable to struct a la
+# const feature_importance_options = Dict(:impurity => DecisionTree.impurity_importance,
+#                                         :split => DecisionTree.split_importance,
+#                                      #   :permutation => DecisionTree.permutation_importance,
+#                                     )
 
 
 # # DECISION TREE CLASSIFIER
@@ -45,7 +45,7 @@ MMI.@mlj_model mutable struct DecisionTreeClassifier <: MMI.Probabilistic
     post_prune::Bool             = false
     merge_purity_threshold::Float64 = 1.0::(_ ≤ 1)
     display_depth::Int           = 5::(_ ≥ 1)
-    feature_importance::Symbol = :impurity::(_ ∈ (:none, :impurity, :split)) #:permutation))
+    feature_importance::Symbol = :impurity::(_ ∈ (:impurity, :split))
     rng::Union{AbstractRNG,Integer} = GLOBAL_RNG
 end
 
@@ -81,25 +81,10 @@ function MMI.fit(m::DecisionTreeClassifier, verbosity::Int, X, y)
     fitresult = (tree, classes_seen, integers_seen, features)
 
     cache  = nothing
-
-    # generate feature importances for report
-    if m.feature_importance != :none
-        fi = feature_importance_options[m.feature_importance](tree)
-        fi_pairs = collect(Dict(zip(features, fi)))
-        # sort descending
-        sort!(fi_pairs, by= x->-x[2])
-
-        report = (classes_seen=classes_seen,
-                  print_tree=TreePrinter(tree),
-                  features=features,
-                  feature_importances=fi_pairs)
-    else
-        report = (classes_seen=classes_seen,
-                  print_tree=TreePrinter(tree),
-                  features=features,
-                  )
-    end
-
+    report = (classes_seen=classes_seen,
+              print_tree=TreePrinter(tree),
+              features=features,
+              )
     return fitresult, cache, report
 end
 
@@ -132,6 +117,27 @@ function MMI.predict(m::DecisionTreeClassifier, fitresult, Xnew)
     return MMI.UnivariateFinite(classes_seen, scores)
 end
 
+MMI.reports_feature_importances(::Type{<:DecisionTreeClassifier}) = true
+
+function MMI.feature_importances(m::DecisionTreeClassifier, fitresult, report)
+    # generate feature importances for report
+    if m.feature_importance == :impurity
+        feature_importance_func = DecisionTree.impurity_importance
+    elseif m.feature_importance == :split
+        feature_importance_func = DecisionTree.split_importance
+    end
+
+    tree = fitresult[1]
+    features = fitresult[end]
+    fi = feature_importance_func(tree)
+    fi_pairs = collect(Dict(zip(features, fi)))
+    # sort descending
+    sort!(fi_pairs, by= x->-x[2])
+
+    return fi_pairs
+end
+
+
 
 # # RANDOM FOREST CLASSIFIER
 
@@ -143,7 +149,7 @@ MMI.@mlj_model mutable struct RandomForestClassifier <: MMI.Probabilistic
     n_subfeatures::Int           = (-)(1)::(_ ≥ -1)
     n_trees::Int                 = 10::(_ ≥ 2)
     sampling_fraction::Float64   = 0.7::(0 < _ ≤ 1)
-    feature_importance::Symbol = :impurity::(_ ∈ (:none, :impurity, :split)) #, :permutation))
+    feature_importance::Symbol = :impurity::(_ ∈ (:impurity, :split))
     rng::Union{AbstractRNG,Integer} = GLOBAL_RNG
 end
 
@@ -172,16 +178,7 @@ function MMI.fit(m::RandomForestClassifier, verbosity::Int, X, y)
                              rng=m.rng)
     cache  = nothing
 
-    if m.feature_importance != :none
-        fi = feature_importance_options[m.feature_importance](forest)
-        fi_pairs = collect(Dict(zip(features, fi)))
-        # sort descending
-        sort!(fi_pairs, by= x->-x[2])
-
-        report = (feature_importances=fi_pairs,)
-    else
-        report = NamedTuple()
-    end
+    report = (features=features,)
 
     return (forest, classes_seen, integers_seen), cache, report
 end
@@ -195,12 +192,34 @@ function MMI.predict(m::RandomForestClassifier, fitresult, Xnew)
     return MMI.UnivariateFinite(classes_seen, scores)
 end
 
+MMI.reports_feature_importances(::Type{<:RandomForestClassifier}) = true
+
+function MMI.feature_importances(m::RandomForestClassifier, fitresult, report)
+    # generate feature importances for report
+    if m.feature_importance == :impurity
+        feature_importance_func = DecisionTree.impurity_importance
+    elseif m.feature_importance == :split
+        feature_importance_func = DecisionTree.split_importance
+    end
+
+    forest = fitresult[1]
+    features = report.features
+    fi = feature_importance_func(forest)
+    fi_pairs = collect(Dict(zip(features, fi)))
+    # sort descending
+    sort!(fi_pairs, by= x->-x[2])
+
+    return fi_pairs
+end
+
+
+
 
 # # ADA BOOST STUMP CLASSIFIER
 
 MMI.@mlj_model mutable struct AdaBoostStumpClassifier <: MMI.Probabilistic
     n_iter::Int            = 10::(_ ≥ 1)
-    feature_importance::Symbol = :impurity::(_ ∈ (:none, :impurity, :split)) # , :permutation))
+    feature_importance::Symbol = :impurity::(_ ∈ (:impurity, :split))
     rng::Union{AbstractRNG,Integer} = GLOBAL_RNG
 end
 
@@ -223,15 +242,7 @@ function MMI.fit(m::AdaBoostStumpClassifier, verbosity::Int, X, y)
         DT.build_adaboost_stumps(yplain, Xmatrix, m.n_iter, rng=m.rng)
     cache  = nothing
 
-    if m.feature_importance != :none
-        fi = feature_importance_options[m.feature_importance](stumps, coefs)
-        fi_pairs = collect(Dict(zip(features, fi)))
-        # sort descending
-        sort!(fi_pairs, by= x->-x[2])
-        report = (feature_importances=fi_pairs,)
-    else
-        report = NamedTuple()
-    end
+    report = (features=features,)
 
     return (stumps, coefs, classes_seen, integers_seen), cache, report
 end
@@ -247,6 +258,27 @@ function MMI.predict(m::AdaBoostStumpClassifier, fitresult, Xnew)
     return MMI.UnivariateFinite(classes_seen, scores)
 end
 
+MMI.reports_feature_importances(::Type{<:AdaBoostStumpClassifier}) = true
+
+function MMI.feature_importances(m::AdaBoostStumpClassifier, fitresult, report)
+    # generate feature importances for report
+    if m.feature_importance == :impurity
+        feature_importance_func = DecisionTree.impurity_importance
+    elseif m.feature_importance == :split
+        feature_importance_func = DecisionTree.split_importance
+    end
+
+    stumps = fitresult[1]
+    coefs = fitresult[2]
+    features = report.features
+    fi = feature_importance_func(stumps, coefs)
+    fi_pairs = collect(Dict(zip(features, fi)))
+    # sort descending
+    sort!(fi_pairs, by= x->-x[2])
+
+    return fi_pairs
+end
+
 
 # # DECISION TREE REGRESSOR
 
@@ -258,7 +290,7 @@ MMI.@mlj_model mutable struct DecisionTreeRegressor <: MMI.Deterministic
     n_subfeatures::Int                   = 0::(_ ≥ -1)
     post_prune::Bool                     = false
     merge_purity_threshold::Float64 = 1.0::(0 ≤ _ ≤ 1)
-    feature_importance::Symbol = :impurity::(_ ∈ (:none, :impurity, :split)) # , :permutation))
+    feature_importance::Symbol = :impurity::(_ ∈ (:impurity, :split))
     rng::Union{AbstractRNG,Integer} = GLOBAL_RNG
 end
 
@@ -285,16 +317,7 @@ function MMI.fit(m::DecisionTreeRegressor, verbosity::Int, X, y)
     end
     cache  = nothing
 
-    if m.feature_importance != :none
-        fi = feature_importance_options[m.feature_importance](tree)
-        fi_pairs = collect(Dict(zip(features, fi)))
-        # sort descending
-        sort!(fi_pairs, by= x->-x[2])
-        report = (feature_importances=fi_pairs,)
-    else
-        report = NamedTuple()
-    end
-
+    report = (features=features,)
 
     return tree, cache, report
 end
@@ -304,6 +327,26 @@ MMI.fitted_params(::DecisionTreeRegressor, tree) = (tree=tree,)
 function MMI.predict(::DecisionTreeRegressor, tree, Xnew)
     Xmatrix = MMI.matrix(Xnew)
     return DT.apply_tree(tree, Xmatrix)
+end
+
+MMI.reports_feature_importances(::Type{<:DecisionTreeRegressor}) = true
+
+function MMI.feature_importances(m::DecisionTreeRegressor, fitresult, report)
+    # generate feature importances for report
+    if m.feature_importance == :impurity
+        feature_importance_func = DecisionTree.impurity_importance
+    elseif m.feature_importance == :split
+        feature_importance_func = DecisionTree.split_importance
+    end
+
+    tree = fitresult
+    features = report.features
+    fi = feature_importance_func(tree)
+    fi_pairs = collect(Dict(zip(features, fi)))
+    # sort descending
+    sort!(fi_pairs, by= x->-x[2])
+
+    return fi_pairs
 end
 
 
@@ -317,7 +360,7 @@ MMI.@mlj_model mutable struct RandomForestRegressor <: MMI.Deterministic
     n_subfeatures::Int           = (-)(1)::(_ ≥ -1)
     n_trees::Int                 = 10::(_ ≥ 2)
     sampling_fraction::Float64   = 0.7::(0 < _ ≤ 1)
-    feature_importance::Symbol = :impurity::(_ ∈ (:none, :impurity, :split)) #, :permutation))
+    feature_importance::Symbol = :impurity::(_ ∈ (:impurity, :split))
     rng::Union{AbstractRNG,Integer} = GLOBAL_RNG
 end
 
@@ -341,16 +384,8 @@ function MMI.fit(m::RandomForestRegressor, verbosity::Int, X, y)
                               m.min_purity_increase,
                               rng=m.rng)
     cache  = nothing
+    report = (features=features,)
 
-    if m.feature_importance != :none
-        fi = feature_importance_options[m.feature_importance](forest)
-        fi_pairs = collect(Dict(zip(features, fi)))
-        # sort descending
-        sort!(fi_pairs, by= x->-x[2])
-        report = (feature_importances=fi_pairs,)
-    else
-        report = NamedTuple()
-    end
     return forest, cache, report
 end
 
@@ -359,6 +394,26 @@ MMI.fitted_params(::RandomForestRegressor, forest) = (forest=forest,)
 function MMI.predict(::RandomForestRegressor, forest, Xnew)
     Xmatrix = MMI.matrix(Xnew)
     return DT.apply_forest(forest, Xmatrix)
+end
+
+MMI.reports_feature_importances(::Type{<:RandomForestRegressor}) = true
+
+function MMI.feature_importances(m::RandomForestRegressor, fitresult, report)
+    # generate feature importances for report
+    if m.feature_importance == :impurity
+        feature_importance_func = DecisionTree.impurity_importance
+    elseif m.feature_importance == :split
+        feature_importance_func = DecisionTree.split_importance
+    end
+
+    forest = fitresult
+    features = report.features
+    fi = feature_importance_func(forest)
+    fi_pairs = collect(Dict(zip(features, fi)))
+    # sort descending
+    sort!(fi_pairs, by= x->-x[2])
+
+    return fi_pairs
 end
 
 
