@@ -142,7 +142,6 @@ fit!(m)
 rpt = MLJBase.report(m)
 @test size(rpt.feature_importances, 1) == 3  # make sure we get an importance for each feature
 
-
 X, y = MLJBase.make_regression(rng=stable_rng())
 rfr = RandomForestRegressor(rng=stable_rng())
 m = machine(rfr, X, y)
@@ -184,3 +183,35 @@ end
         @test reproducibility(model, X, y, loss)
     end
 end
+
+
+# try testing model output for different feature_importance options
+# 1. :none
+X, y = make_regression(100,3; rng=stable_rng());
+dtr = DecisionTreeRegressor(feature_importance=:none, rng=stable_rng())
+rfr = RandomForestRegressor(feature_importance=:none, rng=stable_rng())
+
+m = machine(dtr, X, y)
+fit!(m)
+rpt = MLJBase.report(m)
+@test isempty(rpt)
+
+m = machine(rfr, X, y)
+fit!(m)
+rpt = MLJBase.report(m)
+@test isempty(rpt)
+
+
+# 2. :split
+dtr = DecisionTreeRegressor(feature_importance=:split, rng=stable_rng())
+rfr = RandomForestRegressor(feature_importance=:split, rng=stable_rng())
+
+m = machine(dtr, X, y)
+fit!(m)
+rpt = MLJBase.report(m)
+@test size(rpt.feature_importances, 1) == 3  # make sure we get an importance for each feature
+
+m = machine(rfr, X, y)
+fit!(m)
+rpt = MLJBase.report(m)
+@test size(rpt.feature_importances, 1) == 3  # make sure we get an importance for each feature
