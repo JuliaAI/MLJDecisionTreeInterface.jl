@@ -456,7 +456,7 @@ Train the machine using `fit!(mach, rows=...)`.
 
 - `display_depth=5`:       max depth to show when displaying the tree
 
-- `feature_importance`:    method to use for computing feature importances
+- `feature_importance`:    method to use for computing feature importances. One of `(:impurity, :split)`
 
 - `rng=Random.GLOBAL_RNG`: random number generator or seed
 
@@ -591,7 +591,7 @@ Train the machine with `fit!(mach, rows=...)`.
 
 - `sampling_fraction=0.7`  fraction of samples to train each tree on
 
-- `feature_importance`:    method to use for computing feature importances
+- `feature_importance`:    method to use for computing feature importances. One of `(:impurity, :split)`
 
 - `rng=Random.GLOBAL_RNG`: random number generator or seed
 
@@ -668,7 +668,7 @@ Train the machine with `fit!(mach, rows=...)`.
 
 - `n_iter=10`:   number of iterations of AdaBoost
 
-- `feature_importance`:    method to use for computing feature importances
+- `feature_importance`:    method to use for computing feature importances. One of `(:impurity, :split)`
 
 - `rng=Random.GLOBAL_RNG`: random number generator or seed
 
@@ -761,7 +761,7 @@ Train the machine with `fit!(mach, rows=...)`.
 - `merge_purity_threshold=1.0`: (post-pruning) merge leaves having
                            combined purity `>= merge_purity_threshold`
 
-- `feature_importance`:    method to use for computing feature importances
+- `feature_importance`:    method to use for computing feature importances. One of `(:impurity, :split)`
 
 - `rng=Random.GLOBAL_RNG`: random number generator or seed
 
@@ -845,7 +845,7 @@ Train the machine with `fit!(mach, rows=...)`.
 
 - `sampling_fraction=0.7`  fraction of samples to train each tree on
 
-- `feature_importance`:    method to use for computing feature importances
+- `feature_importance`:    method to use for computing feature importances. One of `(:impurity, :split)`
 
 - `rng=Random.GLOBAL_RNG`: random number generator or seed
 
