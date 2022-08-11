@@ -110,35 +110,10 @@ X, y = MLJBase.make_blobs(100, 3; rng=stable_rng())
 m = machine(rfc, X, y)
 fit!(m)
 @test accuracy(predict_mode(m, X), y) > 0.95
-# check feature_importances
-# rpt = MLJBase.report(m)
-# @test size(rpt.feature_importances, 1) == 3  # make sure we get an importance for each feature
-
 
 m = machine(abs, X, y)
 fit!(m)
 @test accuracy(predict_mode(m, X), y) > 0.95
-# check feature_importances
-# rpt = MLJBase.report(m)
-# @test size(rpt.feature_importances, 1) == 3  # make sure we get an importance for each feature
-
-
-
-
-# test DecisionTreeRegressor and RandomForestRegressor
-# X, y = make_regression(100,3; rng=stable_rng());
-# dtr = DecisionTreeRegressor(rng=stable_rng())
-# rfr = RandomForestRegressor(rng=stable_rng())
-
-# m = machine(dtr, X, y)
-# fit!(m)
-# rpt = MLJBase.report(m)
-# @test size(rpt.feature_importances, 1) == 3  # make sure we get an importance for each feature
-
-# m = machine(rfr, X, y)
-# fit!(m)
-# rpt = MLJBase.report(m)
-# @test size(rpt.feature_importances, 1) == 3  # make sure we get an importance for each feature
 
 X, y = MLJBase.make_regression(rng=stable_rng())
 rfr = RandomForestRegressor(rng=stable_rng())
@@ -183,7 +158,23 @@ end
 end
 
 
+@testset "feature importance defined" begin
+    for model ∈ [
+        DecisionTreeClassifier(),
+        RandomForestClassifier(),
+        AdaBoostStumpClassifier(),
+        DecisionTreeRegressor(),
+        RandomForestRegressor(),
+        ]
+
+        @test reports_feature_importances(model) == true
+    end
+end
+
+
+
 @testset "impurity importance" begin
+
     X, y = MLJBase.make_blobs(100, 3; rng=stable_rng())
 
     for model ∈ [

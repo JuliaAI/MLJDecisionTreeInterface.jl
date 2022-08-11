@@ -22,13 +22,6 @@ Base.show(stream::IO, c::TreePrinter) =
     print(stream, "TreePrinter object (call with display depth)")
 
 
-# # add a new variable to struct a la
-# const feature_importance_options = Dict(:impurity => DecisionTree.impurity_importance,
-#                                         :split => DecisionTree.split_importance,
-#                                      #   :permutation => DecisionTree.permutation_importance,
-#                                     )
-
-
 # # DECISION TREE CLASSIFIER
 
 # The following meets the MLJ standard for a `Model` docstring and is
