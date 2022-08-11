@@ -32,8 +32,7 @@ Base.show(stream::IO, c::TreePrinter) =
 # # DECISION TREE CLASSIFIER
 
 # The following meets the MLJ standard for a `Model` docstring and is
-# created without the use of interpolation so it can be used a
-# template for authors of other MLJ model interfaces. The other
+# created without the use of interpolation so it can be used a # template for authors of other MLJ model interfaces. The other
 # doc-strings, defined later, are generated using the `doc_header`
 # utility to automatically generate the header, another option.
 MMI.@mlj_model mutable struct DecisionTreeClassifier <: MMI.Probabilistic
@@ -48,9 +47,6 @@ MMI.@mlj_model mutable struct DecisionTreeClassifier <: MMI.Probabilistic
     feature_importance::Symbol = :impurity::(_ ∈ (:impurity, :split))
     rng::Union{AbstractRNG,Integer} = GLOBAL_RNG
 end
-
-
-
 
 function MMI.fit(m::DecisionTreeClassifier, verbosity::Int, X, y)
     schema = Tables.schema(X)
@@ -119,25 +115,6 @@ end
 
 MMI.reports_feature_importances(::Type{<:DecisionTreeClassifier}) = true
 
-function MMI.feature_importances(m::DecisionTreeClassifier, fitresult, report)
-    # generate feature importances for report
-    if m.feature_importance == :impurity
-        feature_importance_func = DT.impurity_importance
-    elseif m.feature_importance == :split
-        feature_importance_func = DT.split_importance
-    end
-
-    tree = fitresult[1]
-    features = fitresult[end]
-    fi = feature_importance_func(tree, normalize=true)
-    fi_pairs = Pair.(features, fi)
-    # sort descending
-    sort!(fi_pairs, by= x->-x[2])
-
-    return fi_pairs
-end
-
-
 
 # # RANDOM FOREST CLASSIFIER
 
@@ -194,26 +171,6 @@ end
 
 MMI.reports_feature_importances(::Type{<:RandomForestClassifier}) = true
 
-function MMI.feature_importances(m::RandomForestClassifier, fitresult, report)
-    # generate feature importances for report
-    if m.feature_importance == :impurity
-        feature_importance_func = DT.impurity_importance
-    elseif m.feature_importance == :split
-        feature_importance_func = DT.split_importance
-    end
-
-    forest = fitresult[1]
-    features = report.features
-    fi = feature_importance_func(forest, normalize=true)
-    fi_pairs = Pair.(features, fi)
-    # sort descending
-    sort!(fi_pairs, by= x->-x[2])
-
-    return fi_pairs
-end
-
-
-
 
 # # ADA BOOST STUMP CLASSIFIER
 
@@ -259,25 +216,6 @@ function MMI.predict(m::AdaBoostStumpClassifier, fitresult, Xnew)
 end
 
 MMI.reports_feature_importances(::Type{<:AdaBoostStumpClassifier}) = true
-
-function MMI.feature_importances(m::AdaBoostStumpClassifier, fitresult, report)
-    # generate feature importances for report
-    if m.feature_importance == :impurity
-        feature_importance_func = DT.impurity_importance
-    elseif m.feature_importance == :split
-        feature_importance_func = DT.split_importance
-    end
-
-    stumps = fitresult[1]
-    coefs = fitresult[2]
-    features = report.features
-    fi = feature_importance_func(stumps, coefs, normalize=true)
-    fi_pairs = Pair.(features, fi)
-    # sort descending
-    sort!(fi_pairs, by= x->-x[2])
-
-    return fi_pairs
-end
 
 
 # # DECISION TREE REGRESSOR
@@ -331,24 +269,6 @@ end
 
 MMI.reports_feature_importances(::Type{<:DecisionTreeRegressor}) = true
 
-function MMI.feature_importances(m::DecisionTreeRegressor, fitresult, report)
-    # generate feature importances for report
-    if m.feature_importance == :impurity
-        feature_importance_func = DT.impurity_importance
-    elseif m.feature_importance == :split
-        feature_importance_func = DT.split_importance
-    end
-
-    tree = fitresult
-    features = report.features
-    fi = feature_importance_func(tree, normalize=true)
-    fi_pairs = Pair.(features, fi)
-    # sort descending
-    sort!(fi_pairs, by= x->-x[2])
-
-    return fi_pairs
-end
-
 
 # # RANDOM FOREST REGRESSOR
 
@@ -398,7 +318,15 @@ end
 
 MMI.reports_feature_importances(::Type{<:RandomForestRegressor}) = true
 
-function MMI.feature_importances(m::RandomForestRegressor, fitresult, report)
+
+# # Feature Importances
+
+# get actual arguments needed for importance calculation from various fitresults.
+get_fitresult(m::Union{DecisionTreeClassifier, RandomForestClassifier}, fitresult) = (fitresult[1],)
+get_fitresult(m::Union{DecisionTreeRegressor, RandomForestRegressor}, fitresult) = (fitresult,)
+get_fitresult(m::AdaBoostStumpClassifier, fitresult)= (fitresult[1], fitresult[2])
+
+function MMI.feature_importances(m::Union{DecisionTreeClassifier, RandomForestClassifier, AdaBoostStumpClassifier, DecisionTreeRegressor, RandomForestRegressor}, fitresult, report)
     # generate feature importances for report
     if m.feature_importance == :impurity
         feature_importance_func = DT.impurity_importance
@@ -406,9 +334,9 @@ function MMI.feature_importances(m::RandomForestRegressor, fitresult, report)
         feature_importance_func = DT.split_importance
     end
 
-    forest = fitresult
+    mdl = get_fitresult(m, fitresult)
     features = report.features
-    fi = feature_importance_func(forest, normalize=true)
+    fi = feature_importance_func(mdl..., normalize=true)
     fi_pairs = Pair.(features, fi)
     # sort descending
     sort!(fi_pairs, by= x->-x[2])
