@@ -668,7 +668,8 @@ Train the machine with `fit!(mach, rows=...)`.
 
 - `n_iter=10`:   number of iterations of AdaBoost
 
-- `feature_importance`:    method to use for computing feature importances. One of `(:impurity, :split)`
+- `feature_importance`: method to use for computing feature importances. One of `(:impurity,
+  :split)`
 
 - `rng=Random.GLOBAL_RNG`: random number generator or seed
 
