@@ -45,6 +45,7 @@ yyhat = predict_mode(baretree, fitresult, MLJBase.selectrows(X, 1:3))
 @test Set(report.classes_seen) == Set(levels(y))
 @test report.print_tree(2) === nothing # :-(
 @test report.features == [:sepal_length, :sepal_width, :petal_length, :petal_width]
+
 fp = fitted_params(baretree, fitresult)
 @test Set([:tree, :encoding, :features]) == Set(keys(fp))
 @test fp.features == report.features
@@ -155,3 +156,81 @@ end
         @test reproducibility(model, X, y, loss)
     end
 end
+
+
+@testset "feature importance defined" begin
+    for model ∈ [
+        DecisionTreeClassifier(),
+        RandomForestClassifier(),
+        AdaBoostStumpClassifier(),
+        DecisionTreeRegressor(),
+        RandomForestRegressor(),
+        ]
+
+        @test reports_feature_importances(model) == true
+    end
+end
+
+
+
+@testset "impurity importance" begin
+
+    X, y = MLJBase.make_blobs(100, 3; rng=stable_rng())
+
+    for model ∈ [
+        DecisionTreeClassifier(),
+        RandomForestClassifier(),
+        AdaBoostStumpClassifier(),
+        ]
+        m = machine(model, X, y)
+        fit!(m)
+        rpt = MLJBase.report(m)
+        fi = MLJBase.feature_importances(model, m.fitresult, rpt)
+        @test size(fi,1) == 3
+    end
+
+
+    X, y = make_regression(100,3; rng=stable_rng());
+    for model in [
+        DecisionTreeRegressor(),
+        RandomForestRegressor(),
+        ]
+        m = machine(model, X, y)
+        fit!(m)
+        rpt = MLJBase.report(m)
+        fi = MLJBase.feature_importances(model, m.fitresult, rpt)
+        @test size(fi,1) == 3
+    end
+end
+
+
+@testset "split importance" begin
+    X, y = MLJBase.make_blobs(100, 3; rng=stable_rng())
+
+    for model ∈ [
+        DecisionTreeClassifier(feature_importance=:split),
+        RandomForestClassifier(feature_importance=:split),
+        AdaBoostStumpClassifier(feature_importance=:split),
+        ]
+        m = machine(model, X, y)
+        fit!(m)
+        rpt = MLJBase.report(m)
+        fi = MLJBase.feature_importances(model, m.fitresult, rpt)
+        @test size(fi,1) == 3
+    end
+
+
+    X, y = make_regression(100,3; rng=stable_rng());
+    for model in [
+        DecisionTreeRegressor(feature_importance=:split),
+        RandomForestRegressor(feature_importance=:split),
+        ]
+        m = machine(model, X, y)
+        fit!(m)
+        rpt = MLJBase.report(m)
+        fi = MLJBase.feature_importances(model, m.fitresult, rpt)
+        @test size(fi,1) == 3
+    end
+end
+
+
