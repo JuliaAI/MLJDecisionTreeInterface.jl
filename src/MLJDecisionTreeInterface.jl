@@ -456,7 +456,8 @@ Train the machine using `fit!(mach, rows=...)`.
 
 - `display_depth=5`:       max depth to show when displaying the tree
 
-- `feature_importance`:    method to use for computing feature importances. One of `(:impurity, :split)`
+- `feature_importance`: method to use for computing feature importances. One of `(:impurity,
+  :split)`
 
 - `rng=Random.GLOBAL_RNG`: random number generator or seed
 
@@ -591,7 +592,8 @@ Train the machine with `fit!(mach, rows=...)`.
 
 - `sampling_fraction=0.7`  fraction of samples to train each tree on
 
-- `feature_importance`:    method to use for computing feature importances. One of `(:impurity, :split)`
+- `feature_importance`: method to use for computing feature importances. One of `(:impurity,
+  :split)`
 
 - `rng=Random.GLOBAL_RNG`: random number generator or seed
 
@@ -613,6 +615,11 @@ The fields of `fitted_params(mach)` are:
 - `forest`: the `Ensemble` object returned by the core DecisionTree.jl algorithm
 
 
+# Report
+
+- `features`: the names of the features encountered in training
+
+
 # Examples
 
 ```
@@ -632,6 +639,11 @@ predict_mode(mach, Xnew)   # point predictions
 pdf.(yhat, "virginica")    # probabilities for the "verginica" class
 
 fitted_params(mach).forest # raw `Ensemble` object from DecisionTrees.jl
+
+feature_importances(mach)  # `:impurity` feature importances
+forest.feature_importance = :split
+feature_importance(mach)   # `:split` feature importances
+
 ```
 See also
 [DecisionTree.jl](https://github.com/bensadeghi/DecisionTree.jl) and
@@ -691,6 +703,12 @@ The fields of `fitted_params(mach)` are:
   algorithm.
 
 - `coefficients`: the stump coefficients (one per stump)
+
+
+# Report
+
+- `features`: the names of the features encountered in training
+
 
 ```
 using MLJ
@@ -781,6 +799,11 @@ The fields of `fitted_params(mach)` are:
   DecisionTree.jl algorithm
 
 
+# Report
+
+- `features`: the names of the features encountered in training
+
+
 # Examples
 
 ```
@@ -862,6 +885,11 @@ Train the machine with `fit!(mach, rows=...)`.
 The fields of `fitted_params(mach)` are:
 
 - `forest`: the `Ensemble` object returned by the core DecisionTree.jl algorithm
+
+
+# Report
+
+- `features`: the names of the features encountered in training
 
 
 # Examples
