@@ -79,7 +79,7 @@ end
 
 function get_encoding(classes_seen)
     a_cat_element = classes_seen[1]
-    return Dict(c => MMI.int(c) for c in MMI.classes(a_cat_element))
+    return Dict(MMI.int(c) => c for c in MMI.classes(a_cat_element))
 end
 
 MMI.fitted_params(::DecisionTreeClassifier, fitresult) =
@@ -538,9 +538,9 @@ To interpret the internal class labelling:
 ```
 julia> fitted_params(mach).encoding
 Dict{CategoricalArrays.CategoricalValue{String, UInt32}, UInt32} with 3 entries:
-  "virginica"  => 0x00000003
-  "setosa"     => 0x00000001
-  "versicolor" => 0x00000002
+  0x00000003 => "virginica"
+  0x00000001 => "setosa"
+  0x00000002 => "versicolor"
 ```
 
 See also

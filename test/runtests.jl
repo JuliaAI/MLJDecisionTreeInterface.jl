@@ -49,6 +49,9 @@ yyhat = predict_mode(baretree, fitresult, MLJBase.selectrows(X, 1:3))
 fp = fitted_params(baretree, fitresult)
 @test Set([:tree, :encoding, :features]) == Set(keys(fp))
 @test fp.features == report.features
+enc = fp.encoding
+@test Set(values(enc)) == Set(["virginica", "setosa", "versicolor"])
+@test enc[MLJBase.int(y[end])] == "virginica"
 
 using Random: seed!
 seed!(0)
