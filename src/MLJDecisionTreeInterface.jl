@@ -446,8 +446,7 @@ Train the machine using `fit!(mach, rows=...)`.
 
 - `min_purity_increase=0`: min purity needed for a split
 
-- `n_subfeatures=0`: number of features to select at random (0 for all,
-  -1 for square root of number of features)
+- `n_subfeatures=0`: number of features to select at random (0 for all)
 
 - `post_prune=false`:      set to `true` for post-fit pruning
 
@@ -772,8 +771,7 @@ Train the machine with `fit!(mach, rows=...)`.
 
 - `min_purity_increase=0`: min purity needed for a split
 
-- `n_subfeatures=0`: number of features to select at random (0 for all,
-  -1 for square root of number of features)
+- `n_subfeatures=0`: number of features to select at random (0 for all)
 
 - `post_prune=false`:      set to `true` for post-fit pruning
 
