@@ -311,15 +311,38 @@ end
 
 MMI.reports_feature_importances(::Type{<:RandomForestRegressor}) = true
 
+# # ALIASES FOR TYPE UNIONS
 
-# # Feature Importances
+const TreeModel = Union{
+    DecisionTreeClassifier,
+    RandomForestClassifier,
+    AdaBoostStumpClassifier,
+    DecisionTreeRegressor,
+    RandomForestRegressor,
+}
+
+const IterativeModel = Union{
+    RandomForestClassifier,
+    RandomForestRegressor,
+    AdaBoostStumpClassifier,
+}
+
+const RandomForestModel = Union{DecisionTreeClassifier, RandomForestClassifier}
+
+# # FEATURE IMPORTANCES
 
 # get actual arguments needed for importance calculation from various fitresults.
-get_fitresult(m::Union{DecisionTreeClassifier, RandomForestClassifier}, fitresult) = (fitresult[1],)
-get_fitresult(m::Union{DecisionTreeRegressor, RandomForestRegressor}, fitresult) = (fitresult,)
+get_fitresult(
+    m::Union{DecisionTreeClassifier, RandomForestClassifier},
+    fitresult,
+) = (fitresult[1],)
+get_fitresult(
+    m::Union{DecisionTreeRegressor, RandomForestRegressor},
+    fitresult,
+) = (fitresult,)
 get_fitresult(m::AdaBoostStumpClassifier, fitresult)= (fitresult[1], fitresult[2])
 
-function MMI.feature_importances(m::Union{DecisionTreeClassifier, RandomForestClassifier, AdaBoostStumpClassifier, DecisionTreeRegressor, RandomForestRegressor}, fitresult, report)
+function MMI.feature_importances(m::TreeModel, fitresult, report)
     # generate feature importances for report
     if m.feature_importance == :impurity
         feature_importance_func = DT.impurity_importance
@@ -337,18 +360,7 @@ function MMI.feature_importances(m::Union{DecisionTreeClassifier, RandomForestCl
     return fi_pairs
 end
 
-
 # # METADATA (MODEL TRAITS)
-
-# following five lines of code are redundant if using this branch of
-# MLJModelInterface:
-# https://github.com/JuliaAI/MLJModelInterface.jl/pull/139
-
-# MMI.human_name(::Type{<:DecisionTreeClassifier}) = "CART decision tree classifier"
-# MMI.human_name(::Type{<:RandomForestClassifier}) = "CART random forest classifier"
-# MMI.human_name(::Type{<:AdaBoostStumpClassifier}) = "Ada-boosted stump classifier"
-# MMI.human_name(::Type{<:DecisionTreeRegressor}) = "CART decision tree regressor"
-# MMI.human_name(::Type{<:RandomForestRegressor}) = "CART random forest regressor"
 
 MMI.metadata_pkg.(
     (DecisionTreeClassifier, DecisionTreeRegressor,
