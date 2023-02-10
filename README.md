@@ -1,6 +1,6 @@
-# MLJ <> DecisionTree.jl
+# DecisionTree.jl
 
-Repository implementing MLJ interface for 
+Repository implementing the MLJ model interface for 
 [DecisionTree](https://github.com/bensadeghi/DecisionTree.jl) models.
 
 
