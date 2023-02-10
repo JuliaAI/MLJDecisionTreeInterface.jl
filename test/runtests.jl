@@ -5,13 +5,43 @@ using MLJBase
 using StableRNGs
 using Random
 using Tables
-Random.seed!(1234)
-
-stable_rng() = StableRNGs.StableRNG(123)
+import MLJTestInterface
 
 # load code to be tested:
 import DecisionTree
 using MLJDecisionTreeInterface
+
+Random.seed!(1234)
+
+@testset "generic interface tests" begin
+    @testset "regressors" begin
+        failures, summary = MLJTestInterface.test(
+            [DecisionTreeRegressor, RandomForestRegressor],
+            MLJTestInterface.make_regression()...;
+            mod=@__MODULE__,
+            verbosity=0, # bump to debug
+            throw=false, # set to true to debug
+        )
+        @test isempty(failures)
+    end
+    @testset "classifiers" begin
+        for data in [
+            MLJTestInterface.make_binary(),
+            MLJTestInterface.make_multiclass(),
+        ]
+            failures, summary = MLJTestInterface.test(
+                [DecisionTreeClassifier, RandomForestClassifier, AdaBoostStumpClassifier],
+                data...;
+                mod=@__MODULE__,
+                verbosity=0, # bump to debug
+                throw=false, # set to true to debug
+            )
+            @test isempty(failures)
+        end
+    end
+end
+
+stable_rng() = StableRNGs.StableRNG(123)
 
 # get some test data:
 Xraw, yraw = @load_iris
@@ -100,13 +130,13 @@ y1 = Xraw.x2;
 y2 = float.(Xraw.x3);
 
 rgs = DecisionTreeRegressor(rng=stable_rng())
-X, y, features = MMI.reformat(rgs, Xraw, y2)
+X, y, features = MLJBase.reformat(rgs, Xraw, y2)
 
 fitresult, _, _ = MLJBase.fit(rgs, 1, X, y, features)
 @test rms(predict(rgs, fitresult, X), y) < 1.5
 
 clf = DecisionTreeClassifier()
-X, y, features, _classes = MMI.reformat(clf, Xraw, y1)
+X, y, features, _classes = MLJBase.reformat(clf, Xraw, y1)
 
 fitresult, _, _ = MLJBase.fit(clf, 1, X, y, features, _classes)
 @test sum(predict(clf, fitresult, X) .== y1) == 0 # perfect prediction
