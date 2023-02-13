@@ -129,11 +129,64 @@ function MMI.fit(
                              m.min_samples_split,
                              m.min_purity_increase;
                              rng=m.rng)
-    cache  = nothing
+    cache  = deepcopy(m)
 
     report = (features=features,)
 
     return (forest, classes_seen, integers_seen), cache, report
+end
+
+function MMI.update(
+    model::RandomForestClassifier,
+    verbosity::Int,
+    old_fitresult,
+    old_model,
+    Xmatrix,
+    yplain,
+    features,
+    classes,
+    )
+
+    only_iterations_have_changed = MMI.is_same_except(model, old_model, :n_trees)
+
+    if !only_iterations_have_changed
+        return MMI.fit(
+            model,
+            verbosity,
+            Xmatrix,
+            yplain,
+            features,
+            classes,
+        )
+    end
+
+    old_forest = old_fitresult[1]
+    Δn_trees = model.n_trees - old_model.n_trees
+    # if `n_trees` drops, then tuncate, otherwise compute more trees
+    if Δn_trees < 0
+        verbosity > 0 && @info "Dropping $(-Δn_trees) trees from the forest. "
+        forest = old_forest[1:model.n_trees]
+    else
+        verbosity > 0 && @info "Adding $Δn_trees trees to the forest. "
+        forest = DT.build_forest(
+            old_forest,
+            yplain, Xmatrix,
+            model.n_subfeatures,
+            model.n_trees,
+            model.sampling_fraction,
+            model.max_depth,
+            model.min_samples_leaf,
+            model.min_samples_split,
+            model.min_purity_increase;
+            rng=model.rng,
+        )
+    end
+
+    fitresult = (forest, old_fitresult[2:3]...)
+    cache = deepcopy(model)
+    report = (features=features,)
+    return fitresult, cache, report
+
 end
 
 MMI.fitted_params(::RandomForestClassifier, (forest,_)) = (forest=forest,)
@@ -145,7 +198,7 @@ function MMI.predict(m::RandomForestClassifier, fitresult, Xnew)
 end
 
 MMI.reports_feature_importances(::Type{<:RandomForestClassifier}) = true
-
+MMI.iteration_parameter(::Type{<:RandomForestClassifier}) = :n_trees
 
 # # ADA BOOST STUMP CLASSIFIER
 
@@ -266,10 +319,62 @@ function MMI.fit(m::RandomForestRegressor, verbosity::Int, Xmatrix, y, features)
         rng=m.rng
     )
 
-    cache  = nothing
+    cache  = deepcopy(m)
     report = (features=features,)
 
     return forest, cache, report
+end
+
+function MMI.update(
+    model::RandomForestRegressor,
+    verbosity::Int,
+    old_forest,
+    old_model,
+    Xmatrix,
+    y,
+    features,
+    )
+
+    only_iterations_have_changed = MMI.is_same_except(model, old_model, :n_trees)
+
+    if !only_iterations_have_changed
+        return MMI.fit(
+            model,
+            verbosity,
+            Xmatrix,
+            y,
+            features,
+        )
+    end
+
+    Δn_trees = model.n_trees - old_model.n_trees
+
+    # if `n_trees` drops, then tuncate, otherwise compute more trees
+    if Δn_trees < 0
+        verbosity > 0 && @info "Dropping $(-Δn_trees) trees from the forest. "
+        forest = old_forest[1:model.n_trees]
+    else
+        verbosity > 0 && @info "Adding $Δn_trees trees to the forest. "
+        forest = DT.build_forest(
+            old_forest,
+            y,
+            Xmatrix,
+            model.n_subfeatures,
+            model.n_trees,
+            model.sampling_fraction,
+            model.max_depth,
+            model.min_samples_leaf,
+            model.min_samples_split,
+            model.min_purity_increase;
+            rng=model.rng
+        )
+    end
+
+    cache = deepcopy(model)
+    report = (features=features,)
+
+    return forest, cache, report
+
 end
 
 MMI.fitted_params(::RandomForestRegressor, forest) = (forest=forest,)
@@ -277,6 +382,8 @@ MMI.fitted_params(::RandomForestRegressor, forest) = (forest=forest,)
 MMI.predict(::RandomForestRegressor, forest, Xnew) = DT.apply_forest(forest, Xnew)
 
 MMI.reports_feature_importances(::Type{<:RandomForestRegressor}) = true
+MMI.iteration_parameter(::Type{<:RandomForestRegressor}) = :n_trees
+
 
 # # ALIASES FOR TYPE UNIONS
 
