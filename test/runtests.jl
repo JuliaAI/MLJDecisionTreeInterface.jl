@@ -271,4 +271,46 @@ end
     end
 end
 
+@testset "warm restart" begin
+    for M in [:RandomForestClassifier, :RandomForestRegressor]
+        data = (M == :RandomForestClassifier ? make_blobs() : make_regression())
+        quote
+            model = $M(n_trees=4, rng = stable_rng()) # model with 4 trees
+            @test MLJBase.iteration_parameter(model) === :n_trees
+            mach =  machine(model, $data...)
+            fit!(mach, verbosity=0)
+            forest1_4 = fitted_params(mach).forest
+            @test length(forest1_4) ==4
+
+            # increase n_trees:
+            mach.model = $M(n_trees=7, rng = stable_rng())
+            @test_logs(
+                (:info, r""),
+                (:info, MLJDecisionTreeInterface.info_adding(3)),
+                fit!(mach, verbosity=1),
+            )
+
+            # decrease n_trees:
+            mach.model = $M(n_trees=5, rng = stable_rng())
+            @test_logs(
+                (:info, r""),
+                (:info, MLJDecisionTreeInterface.info_dropping(2)),
+                fit!(mach, verbosity=1),
+            )
+            forest1_5 = fitted_params(mach).forest
+            @test length(forest1_5) == 5
+
+            # change a different hyperparameter:
+            mach.model = $M(n_trees=5, rng = stable_rng(), max_depth=1)
+            @test_logs(
+                (:info, r""),
+                (:info, MLJDecisionTreeInterface.info_recomputing(5)),
+                fit!(mach, verbosity=1),
+            )
+            forest1_5_again = fitted_params(mach).forest
+            @test length(forest1_5_again) == 5
+        end |> eval
+    end
+end
+
 true
