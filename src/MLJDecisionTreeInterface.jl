@@ -4,6 +4,7 @@ import MLJModelInterface
 using MLJModelInterface.ScientificTypesBase
 import DecisionTree
 import Tables
+using CategoricalArrays
 
 using Random
 import Random.GLOBAL_RNG
@@ -21,13 +22,13 @@ end
 Base.show(stream::IO, c::TreePrinter) =
     print(stream, "TreePrinter object (call with display depth)")
 
+function classes(y)
+    p = CategoricalArrays.pool(y)
+    [p[i] for i in 1:length(p)]
+end
 
 # # DECISION TREE CLASSIFIER
 
-# The following meets the MLJ standard for a `Model` docstring and is
-# created without the use of interpolation so it can be used a # template for authors of other MLJ model interfaces. The other
-# doc-strings, defined later, are generated using the `doc_header`
-# utility to automatically generate the header, another option.
 MMI.@mlj_model mutable struct DecisionTreeClassifier <: MMI.Probabilistic
     max_depth::Int               = (-)(1)::(_ ≥ -1)
     min_samples_leaf::Int        = 1::(_ ≥ 0)
@@ -41,19 +42,17 @@ MMI.@mlj_model mutable struct DecisionTreeClassifier <: MMI.Probabilistic
     rng::Union{AbstractRNG,Integer} = GLOBAL_RNG
 end
 
-function MMI.fit(m::DecisionTreeClassifier, verbosity::Int, X, y)
-    schema = Tables.schema(X)
-    Xmatrix = MMI.matrix(X)
-    yplain  = MMI.int(y)
+function MMI.fit(
+    m::DecisionTreeClassifier,
+    verbosity::Int,
+    Xmatrix,
+    yplain,
+    features,
+    classes,
+    )
 
-    if schema === nothing
-        features = [Symbol("x$j") for j in 1:size(Xmatrix, 2)]
-    else
-        features = schema.names |> collect
-    end
-
-    classes_seen  = filter(in(unique(y)), MMI.classes(y[1]))
-    integers_seen = MMI.int(classes_seen)
+    integers_seen = unique(yplain)
+    classes_seen  = MMI.decoder(classes)(integers_seen)
 
     tree = DT.build_tree(yplain, Xmatrix,
                          m.n_subfeatures,
@@ -70,40 +69,26 @@ function MMI.fit(m::DecisionTreeClassifier, verbosity::Int, X, y)
     fitresult = (tree, classes_seen, integers_seen, features)
 
     cache  = nothing
-    report = (classes_seen=classes_seen,
-              print_tree=TreePrinter(tree),
-              features=features,
-              )
+    report = (
+        classes_seen=classes_seen,
+        print_tree=TreePrinter(tree),
+        features=features,
+    )
     return fitresult, cache, report
 end
 
-function get_encoding(classes_seen)
-    a_cat_element = classes_seen[1]
-    return Dict(MMI.int(c) => c for c in MMI.classes(a_cat_element))
-end
+get_encoding(classes_seen) = Dict(MMI.int(c) => c for c in classes(classes_seen))
 
 MMI.fitted_params(::DecisionTreeClassifier, fitresult) =
     (tree=fitresult[1],
      encoding=get_encoding(fitresult[2]),
      features=fitresult[4])
 
-function smooth(scores, smoothing)
-    iszero(smoothing) && return scores
-    threshold = smoothing / size(scores, 2)
-    # clip low values
-    scores[scores .< threshold] .= threshold
-    # normalize
-    return scores ./ sum(scores, dims=2)
-end
-
 function MMI.predict(m::DecisionTreeClassifier, fitresult, Xnew)
-    Xmatrix = MMI.matrix(Xnew)
     tree, classes_seen, integers_seen = fitresult
     # retrieve the predicted scores
-    scores = DT.apply_tree_proba(tree, Xmatrix, integers_seen)
-
-    # return vector of UF
-    return MMI.UnivariateFinite(classes_seen, scores)
+    scores = DT.apply_tree_proba(tree, Xnew, integers_seen)
+    MMI.UnivariateFinite(classes_seen, scores)
 end
 
 MMI.reports_feature_importances(::Type{<:DecisionTreeClassifier}) = true
@@ -123,19 +108,17 @@ MMI.@mlj_model mutable struct RandomForestClassifier <: MMI.Probabilistic
     rng::Union{AbstractRNG,Integer} = GLOBAL_RNG
 end
 
-function MMI.fit(m::RandomForestClassifier, verbosity::Int, X, y)
-    schema = Tables.schema(X)
-    Xmatrix = MMI.matrix(X)
-    yplain  = MMI.int(y)
+function MMI.fit(
+    m::RandomForestClassifier,
+    verbosity::Int,
+    Xmatrix,
+    yplain,
+    features,
+    classes,
+    )
 
-    if schema === nothing
-        features = [Symbol("x$j") for j in 1:size(Xmatrix, 2)]
-    else
-        features = schema.names |> collect
-    end
-
-    classes_seen  = filter(in(unique(y)), MMI.classes(y[1]))
-    integers_seen = MMI.int(classes_seen)
+    integers_seen = unique(yplain)
+    classes_seen  = MMI.decoder(classes)(integers_seen)
 
     forest = DT.build_forest(yplain, Xmatrix,
                              m.n_subfeatures,
@@ -146,24 +129,82 @@ function MMI.fit(m::RandomForestClassifier, verbosity::Int, X, y)
                              m.min_samples_split,
                              m.min_purity_increase;
                              rng=m.rng)
-    cache  = nothing
+    cache  = deepcopy(m)
 
     report = (features=features,)
 
     return (forest, classes_seen, integers_seen), cache, report
 end
 
+info_recomputing(n) = "Detected a change to hyperparameters " *
+    "not restricted to `n_trees`. Recomputing all $n trees trees. "
+info_dropping(n) =  "Dropping $n trees from the ensemble. "
+info_adding(n) = "Adding $n trees to the ensemble. "
+
+function MMI.update(
+    model::RandomForestClassifier,
+    verbosity::Int,
+    old_fitresult,
+    old_model,
+    Xmatrix,
+    yplain,
+    features,
+    classes,
+    )
+
+    only_iterations_have_changed = MMI.is_same_except(model, old_model, :n_trees)
+
+    if !only_iterations_have_changed
+        verbosity > 0 && @info info_recomputing(model.n_trees)
+        return MMI.fit(
+            model,
+            verbosity,
+            Xmatrix,
+            yplain,
+            features,
+            classes,
+        )
+    end
+
+    old_forest = old_fitresult[1]
+    Δn_trees = model.n_trees - old_model.n_trees
+    # if `n_trees` drops, then tuncate, otherwise compute more trees
+    if Δn_trees < 0
+        verbosity > 0 && @info info_dropping(-Δn_trees)
+        forest = old_forest[1:model.n_trees]
+    else
+        verbosity > 0 && @info info_adding(Δn_trees)
+        forest = DT.build_forest(
+            old_forest,
+            yplain, Xmatrix,
+            model.n_subfeatures,
+            model.n_trees,
+            model.sampling_fraction,
+            model.max_depth,
+            model.min_samples_leaf,
+            model.min_samples_split,
+            model.min_purity_increase;
+            rng=model.rng,
+        )
+    end
+
+    fitresult = (forest, old_fitresult[2:3]...)
+    cache = deepcopy(model)
+    report = (features=features,)
+    return fitresult, cache, report
+
+end
+
 MMI.fitted_params(::RandomForestClassifier, (forest,_)) = (forest=forest,)
 
 function MMI.predict(m::RandomForestClassifier, fitresult, Xnew)
-    Xmatrix = MMI.matrix(Xnew)
     forest, classes_seen, integers_seen = fitresult
-    scores = DT.apply_forest_proba(forest, Xmatrix, integers_seen)
-    return MMI.UnivariateFinite(classes_seen, scores)
+    scores = DT.apply_forest_proba(forest, Xnew, integers_seen)
+    MMI.UnivariateFinite(classes_seen, scores)
 end
 
 MMI.reports_feature_importances(::Type{<:RandomForestClassifier}) = true
-
+MMI.iteration_parameter(::Type{<:RandomForestClassifier}) = :n_trees
 
 # # ADA BOOST STUMP CLASSIFIER
 
@@ -173,20 +214,17 @@ MMI.@mlj_model mutable struct AdaBoostStumpClassifier <: MMI.Probabilistic
     rng::Union{AbstractRNG,Integer} = GLOBAL_RNG
 end
 
-function MMI.fit(m::AdaBoostStumpClassifier, verbosity::Int, X, y)
-    schema = Tables.schema(X)
-    Xmatrix = MMI.matrix(X)
-    yplain  = MMI.int(y)
+function MMI.fit(
+    m::AdaBoostStumpClassifier,
+    verbosity::Int,
+    Xmatrix,
+    yplain,
+    features,
+    classes,
+    )
 
-    if schema === nothing
-        features = [Symbol("x$j") for j in 1:size(Xmatrix, 2)]
-    else
-        features = schema.names |> collect
-    end
-
-
-    classes_seen  = filter(in(unique(y)), MMI.classes(y[1]))
-    integers_seen = MMI.int(classes_seen)
+    integers_seen = unique(yplain)
+    classes_seen  = MMI.decoder(classes)(integers_seen)
 
     stumps, coefs =
         DT.build_adaboost_stumps(yplain, Xmatrix, m.n_iter, rng=m.rng)
@@ -201,10 +239,13 @@ MMI.fitted_params(::AdaBoostStumpClassifier, (stumps,coefs,_)) =
     (stumps=stumps,coefs=coefs)
 
 function MMI.predict(m::AdaBoostStumpClassifier, fitresult, Xnew)
-    Xmatrix = MMI.matrix(Xnew)
     stumps, coefs, classes_seen, integers_seen = fitresult
-    scores = DT.apply_adaboost_stumps_proba(stumps, coefs,
-                                            Xmatrix, integers_seen)
+    scores = DT.apply_adaboost_stumps_proba(
+        stumps,
+        coefs,
+        Xnew,
+        integers_seen,
+    )
     return MMI.UnivariateFinite(classes_seen, scores)
 end
 
@@ -225,23 +266,18 @@ MMI.@mlj_model mutable struct DecisionTreeRegressor <: MMI.Deterministic
     rng::Union{AbstractRNG,Integer} = GLOBAL_RNG
 end
 
-function MMI.fit(m::DecisionTreeRegressor, verbosity::Int, X, y)
-    schema = Tables.schema(X)
-    Xmatrix = MMI.matrix(X)
+function MMI.fit(m::DecisionTreeRegressor, verbosity::Int, Xmatrix, y, features)
 
-    if schema === nothing
-        features = [Symbol("x$j") for j in 1:size(Xmatrix, 2)]
-    else
-        features = schema.names |> collect
-    end
-
-    tree    = DT.build_tree(float(y), Xmatrix,
-                            m.n_subfeatures,
-                            m.max_depth,
-                            m.min_samples_leaf,
-                            m.min_samples_split,
-                            m.min_purity_increase;
-                            rng=m.rng)
+    tree = DT.build_tree(
+        y,
+        Xmatrix,
+        m.n_subfeatures,
+        m.max_depth,
+        m.min_samples_leaf,
+        m.min_samples_split,
+        m.min_purity_increase;
+        rng=m.rng
+    )
 
     if m.post_prune
         tree = DT.prune_tree(tree, m.merge_purity_threshold)
@@ -255,10 +291,7 @@ end
 
 MMI.fitted_params(::DecisionTreeRegressor, tree) = (tree=tree,)
 
-function MMI.predict(::DecisionTreeRegressor, tree, Xnew)
-    Xmatrix = MMI.matrix(Xnew)
-    return DT.apply_tree(tree, Xmatrix)
-end
+MMI.predict(::DecisionTreeRegressor, tree, Xnew) = DT.apply_tree(tree, Xnew)
 
 MMI.reports_feature_importances(::Type{<:DecisionTreeRegressor}) = true
 
@@ -277,49 +310,152 @@ MMI.@mlj_model mutable struct RandomForestRegressor <: MMI.Deterministic
     rng::Union{AbstractRNG,Integer} = GLOBAL_RNG
 end
 
-function MMI.fit(m::RandomForestRegressor, verbosity::Int, X, y)
-    schema = Tables.schema(X)
-    Xmatrix = MMI.matrix(X)
+function MMI.fit(m::RandomForestRegressor, verbosity::Int, Xmatrix, y, features)
 
-    if schema === nothing
-        features = [Symbol("x$j") for j in 1:size(Xmatrix, 2)]
-    else
-        features = schema.names |> collect
-    end
+    forest = DT.build_forest(
+        y,
+        Xmatrix,
+        m.n_subfeatures,
+        m.n_trees,
+        m.sampling_fraction,
+        m.max_depth,
+        m.min_samples_leaf,
+        m.min_samples_split,
+        m.min_purity_increase,
+        rng=m.rng
+    )
 
-    forest  = DT.build_forest(float(y), Xmatrix,
-                              m.n_subfeatures,
-                              m.n_trees,
-                              m.sampling_fraction,
-                              m.max_depth,
-                              m.min_samples_leaf,
-                              m.min_samples_split,
-                              m.min_purity_increase,
-                              rng=m.rng)
-    cache  = nothing
+    cache  = deepcopy(m)
     report = (features=features,)
 
     return forest, cache, report
 end
 
-MMI.fitted_params(::RandomForestRegressor, forest) = (forest=forest,)
+function MMI.update(
+    model::RandomForestRegressor,
+    verbosity::Int,
+    old_forest,
+    old_model,
+    Xmatrix,
+    y,
+    features,
+    )
 
-function MMI.predict(::RandomForestRegressor, forest, Xnew)
-    Xmatrix = MMI.matrix(Xnew)
-    return DT.apply_forest(forest, Xmatrix)
+    only_iterations_have_changed = MMI.is_same_except(model, old_model, :n_trees)
+
+    if !only_iterations_have_changed
+        verbosity > 0 && @info info_recomputing(model.n_trees)
+        return MMI.fit(
+            model,
+            verbosity,
+            Xmatrix,
+            y,
+            features,
+        )
+    end
+
+    Δn_trees = model.n_trees - old_model.n_trees
+
+    # if `n_trees` drops, then tuncate, otherwise compute more trees
+    if Δn_trees < 0
+        verbosity > 0 && @info info_dropping(-Δn_trees)
+        forest = old_forest[1:model.n_trees]
+    else
+        verbosity > 0 && @info info_adding(Δn_trees)
+        forest = DT.build_forest(
+            old_forest,
+            y,
+            Xmatrix,
+            model.n_subfeatures,
+            model.n_trees,
+            model.sampling_fraction,
+            model.max_depth,
+            model.min_samples_leaf,
+            model.min_samples_split,
+            model.min_purity_increase;
+            rng=model.rng
+        )
+    end
+
+    cache = deepcopy(model)
+    report = (features=features,)
+
+    return forest, cache, report
+
 end
 
+MMI.fitted_params(::RandomForestRegressor, forest) = (forest=forest,)
+
+MMI.predict(::RandomForestRegressor, forest, Xnew) = DT.apply_forest(forest, Xnew)
+
 MMI.reports_feature_importances(::Type{<:RandomForestRegressor}) = true
+MMI.iteration_parameter(::Type{<:RandomForestRegressor}) = :n_trees
 
 
-# # Feature Importances
+# # ALIASES FOR TYPE UNIONS
+
+const TreeModel = Union{
+    DecisionTreeClassifier,
+    RandomForestClassifier,
+    AdaBoostStumpClassifier,
+    DecisionTreeRegressor,
+    RandomForestRegressor,
+}
+
+const IterativeModel = Union{
+    RandomForestClassifier,
+    RandomForestRegressor,
+    AdaBoostStumpClassifier,
+}
+
+const Classifier = Union{
+    DecisionTreeClassifier,
+    RandomForestClassifier,
+    AdaBoostStumpClassifier,
+}
+
+const Regressor = Union{
+    DecisionTreeRegressor,
+    RandomForestRegressor,
+}
+
+const RandomForestModel = Union{
+    DecisionTreeClassifier,
+    RandomForestClassifier,
+}
+
+
+# # DATA FRONT END
+
+_columnnames(X) = Tables.columnnames(Tables.columns(X)) |> collect
+
+# for fit:
+MMI.reformat(::Classifier, X, y) =
+    (Tables.matrix(X), MMI.int(y), _columnnames(X), classes(y))
+MMI.reformat(::Regressor, X, y) =
+    (Tables.matrix(X), float(y), _columnnames(X))
+MMI.selectrows(::TreeModel, I, Xmatrix, y, meta...) =
+    (view(Xmatrix, I, :), view(y, I), meta...)
+
+# for predict:
+MMI.reformat(::TreeModel, X) = (Tables.matrix(X),)
+MMI.selectrows(::TreeModel, I, Xmatrix) = (view(Xmatrix, I, :),)
+
+
+# # FEATURE IMPORTANCES
 
 # get actual arguments needed for importance calculation from various fitresults.
-get_fitresult(m::Union{DecisionTreeClassifier, RandomForestClassifier}, fitresult) = (fitresult[1],)
-get_fitresult(m::Union{DecisionTreeRegressor, RandomForestRegressor}, fitresult) = (fitresult,)
+get_fitresult(
+    m::Union{DecisionTreeClassifier, RandomForestClassifier},
+    fitresult,
+) = (fitresult[1],)
+get_fitresult(
+    m::Union{DecisionTreeRegressor, RandomForestRegressor},
+    fitresult,
+) = (fitresult,)
 get_fitresult(m::AdaBoostStumpClassifier, fitresult)= (fitresult[1], fitresult[2])
 
-function MMI.feature_importances(m::Union{DecisionTreeClassifier, RandomForestClassifier, AdaBoostStumpClassifier, DecisionTreeRegressor, RandomForestRegressor}, fitresult, report)
+function MMI.feature_importances(m::TreeModel, fitresult, report)
     # generate feature importances for report
     if m.feature_importance == :impurity
         feature_importance_func = DT.impurity_importance
@@ -337,18 +473,7 @@ function MMI.feature_importances(m::Union{DecisionTreeClassifier, RandomForestCl
     return fi_pairs
 end
 
-
 # # METADATA (MODEL TRAITS)
-
-# following five lines of code are redundant if using this branch of
-# MLJModelInterface:
-# https://github.com/JuliaAI/MLJModelInterface.jl/pull/139
-
-# MMI.human_name(::Type{<:DecisionTreeClassifier}) = "CART decision tree classifier"
-# MMI.human_name(::Type{<:RandomForestClassifier}) = "CART random forest classifier"
-# MMI.human_name(::Type{<:AdaBoostStumpClassifier}) = "Ada-boosted stump classifier"
-# MMI.human_name(::Type{<:DecisionTreeRegressor}) = "CART decision tree regressor"
-# MMI.human_name(::Type{<:RandomForestRegressor}) = "CART random forest regressor"
 
 MMI.metadata_pkg.(
     (DecisionTreeClassifier, DecisionTreeRegressor,
