@@ -150,6 +150,8 @@ function MMI.update(
     only_iterations_have_changed = MMI.is_same_except(model, old_model, :n_trees)
 
     if !only_iterations_have_changed
+        verbosity > 0 && @info "Detected a change to hyperparameters " *
+            "not restricted to `n_trees`. Recomputing $n_trees trees. "
         return MMI.fit(
             model,
             verbosity,
