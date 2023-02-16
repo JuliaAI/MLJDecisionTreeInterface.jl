@@ -136,6 +136,11 @@ function MMI.fit(
     return (forest, classes_seen, integers_seen), cache, report
 end
 
+info_recomputing(n) = "Detected a change to hyperparameters " *
+    "not restricted to `n_trees`. Recomputing all $n trees trees. "
+info_dropping(n) =  "Dropping $n trees from the ensemble. "
+info_adding(n) = "Adding $n trees to the ensemble. "
+
 function MMI.update(
     model::RandomForestClassifier,
     verbosity::Int,
@@ -150,8 +155,7 @@ function MMI.update(
     only_iterations_have_changed = MMI.is_same_except(model, old_model, :n_trees)
 
     if !only_iterations_have_changed
-        verbosity > 0 && @info "Detected a change to hyperparameters " *
-            "not restricted to `n_trees`. Recomputing $n_trees trees. "
+        verbosity > 0 && @info info_recomputing(model.n_trees)
         return MMI.fit(
             model,
             verbosity,
@@ -166,10 +170,10 @@ function MMI.update(
     Δn_trees = model.n_trees - old_model.n_trees
     # if `n_trees` drops, then tuncate, otherwise compute more trees
     if Δn_trees < 0
-        verbosity > 0 && @info "Dropping $(-Δn_trees) trees from the forest. "
+        verbosity > 0 && @info info_dropping(-Δn_trees)
         forest = old_forest[1:model.n_trees]
     else
-        verbosity > 0 && @info "Adding $Δn_trees trees to the forest. "
+        verbosity > 0 && @info info_adding(Δn_trees)
         forest = DT.build_forest(
             old_forest,
             yplain, Xmatrix,
@@ -340,8 +344,7 @@ function MMI.update(
     only_iterations_have_changed = MMI.is_same_except(model, old_model, :n_trees)
 
     if !only_iterations_have_changed
-        verbosity > 0 && @info "Detected a change to hyperparameters " *
-            "not restricted to `n_trees`. Recomputing $n_trees trees. "
+        verbosity > 0 && @info info_recomputing(model.n_trees)
         return MMI.fit(
             model,
             verbosity,
@@ -355,10 +358,10 @@ function MMI.update(
 
     # if `n_trees` drops, then tuncate, otherwise compute more trees
     if Δn_trees < 0
-        verbosity > 0 && @info "Dropping $(-Δn_trees) trees from the forest. "
+        verbosity > 0 && @info info_dropping(-Δn_trees)
         forest = old_forest[1:model.n_trees]
     else
-        verbosity > 0 && @info "Adding $Δn_trees trees to the forest. "
+        verbosity > 0 && @info info_adding(Δn_trees)
         forest = DT.build_forest(
             old_forest,
             y,

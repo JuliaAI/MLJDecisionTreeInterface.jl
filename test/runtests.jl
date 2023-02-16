@@ -286,7 +286,7 @@ end
             mach.model = $M(n_trees=7, rng = stable_rng())
             @test_logs(
                 (:info, r""),
-                (:info, r"Adding 3 trees"),
+                (:info, MLJDecisionTreeInterface.info_adding(3)),
                 fit!(mach, verbosity=1),
             )
 
@@ -294,7 +294,7 @@ end
             mach.model = $M(n_trees=5, rng = stable_rng())
             @test_logs(
                 (:info, r""),
-                (:info, r"Dropping 2 trees"),
+                (:info, MLJDecisionTreeInterface.info_dropping(2)),
                 fit!(mach, verbosity=1),
             )
             forest1_5 = fitted_params(mach).forest
@@ -304,7 +304,7 @@ end
             mach.model = $M(n_trees=5, rng = stable_rng(), max_depth=1)
             @test_logs(
                 (:info, r""),
-                (:info, r"Detected"),
+                (:info, MLJDecisionTreeInterface.info_recomputing(5)),
                 fit!(mach, verbosity=1),
             )
             forest1_5_again = fitted_params(mach).forest
