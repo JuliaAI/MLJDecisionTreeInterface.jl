@@ -102,7 +102,7 @@ MMI.@mlj_model mutable struct RandomForestClassifier <: MMI.Probabilistic
     min_samples_split::Int       = 2::(_ ≥ 2)
     min_purity_increase::Float64 = 0.0::(_ ≥ 0)
     n_subfeatures::Int           = (-)(1)::(_ ≥ -1)
-    n_trees::Int                 = 10::(_ ≥ 2)
+    n_trees::Int                 = 100::(_ ≥ 0)
     sampling_fraction::Float64   = 0.7::(0 < _ ≤ 1)
     feature_importance::Symbol = :impurity::(_ ∈ (:impurity, :split))
     rng::Union{AbstractRNG,Integer} = GLOBAL_RNG
@@ -304,7 +304,7 @@ MMI.@mlj_model mutable struct RandomForestRegressor <: MMI.Deterministic
     min_samples_split::Int       = 2::(_ ≥ 2)
     min_purity_increase::Float64 = 0.0::(_ ≥ 0)
     n_subfeatures::Int           = (-)(1)::(_ ≥ -1)
-    n_trees::Int                 = 10::(_ ≥ 2)
+    n_trees::Int                 = 100::(_ ≥ 0)
     sampling_fraction::Float64   = 0.7::(0 < _ ≤ 1)
     feature_importance::Symbol = :impurity::(_ ∈ (:impurity, :split))
     rng::Union{AbstractRNG,Integer} = GLOBAL_RNG
