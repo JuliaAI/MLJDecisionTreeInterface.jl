@@ -585,7 +585,7 @@ where
 Train the machine using `fit!(mach, rows=...)`.
 
 
-# Hyper-parameters
+# Hyperparameters
 
 - `max_depth=-1`:          max depth of the decision tree (-1=any)
 
@@ -650,6 +650,11 @@ The fields of `report(mach)` are:
 - `features`: the names of the features encountered in training, in an
   order consistent with the output of `print_tree` (see below)
 
+# Accessor functions
+
+- `feature_importances(mach)` returns a vector of `(feature::Symbol => importance)` pairs;
+  the type of importance is determined by the hyperparameter `feature_importance` (see
+  above)
 
 # Examples
 
@@ -718,7 +723,7 @@ where
 Train the machine with `fit!(mach, rows=...)`.
 
 
-# Hyper-parameters
+# Hyperparameters
 
 - `max_depth=-1`:          max depth of the decision tree (-1=any)
 
@@ -761,6 +766,13 @@ The fields of `fitted_params(mach)` are:
 # Report
 
 - `features`: the names of the features encountered in training
+
+
+# Accessor functions
+
+- `feature_importances(mach)` returns a vector of `(feature::Symbol => importance)` pairs;
+  the type of importance is determined by the hyperparameter `feature_importance` (see
+  above)
 
 
 # Examples
@@ -819,7 +831,7 @@ where:
 Train the machine with `fit!(mach, rows=...)`.
 
 
-# Hyper-parameters
+# Hyperparameters
 
 - `n_iter=10`:   number of iterations of AdaBoost
 
@@ -853,6 +865,15 @@ The fields of `fitted_params(mach)` are:
 - `features`: the names of the features encountered in training
 
 
+# Accessor functions
+
+- `feature_importances(mach)` returns a vector of `(feature::Symbol => importance)` pairs;
+  the type of importance is determined by the hyperparameter `feature_importance` (see
+  above)
+
+
+# Examples
+
 ```
 using MLJ
 Booster = @load AdaBoostStumpClassifier pkg=DecisionTree
@@ -871,6 +892,7 @@ pdf.(yhat, "virginica")    # probabilities for the "verginica" class
 
 fitted_params(mach).stumps # raw `Ensemble` object from DecisionTree.jl
 fitted_params(mach).coefs  # coefficient associated with each stump
+feature_importances(mach)
 ```
 
 See also
@@ -905,7 +927,7 @@ where
 Train the machine with `fit!(mach, rows=...)`.
 
 
-# Hyper-parameters
+# Hyperparameters
 
 - `max_depth=-1`:          max depth of the decision tree (-1=any)
 
@@ -947,6 +969,13 @@ The fields of `fitted_params(mach)` are:
 # Report
 
 - `features`: the names of the features encountered in training
+
+
+# Accessor functions
+
+- `feature_importances(mach)` returns a vector of `(feature::Symbol => importance)` pairs;
+  the type of importance is determined by the hyperparameter `feature_importance` (see
+  above)
 
 
 # Examples
@@ -1012,24 +1041,25 @@ where
 Train the machine with `fit!(mach, rows=...)`.
 
 
-# Hyper-parameters
+# Hyperparameters
 
-- `max_depth=-1`:          max depth of the decision tree (-1=any)
+- `max_depth=-1`: max depth of the decision tree (-1=any)
 
-- `min_samples_leaf=1`:    min number of samples each leaf needs to have
+- `min_samples_leaf=1`: min number of samples each leaf needs to have
 
-- `min_samples_split=2`:   min number of samples needed for a split
+- `min_samples_split=2`: min number of samples needed for a split
 
 - `min_purity_increase=0`: min purity needed for a split
 
 - `n_subfeatures=-1`: number of features to select at random (0 for all,
   -1 for square root of number of features)
 
-- `n_trees=10`:            number of trees to train
+- `n_trees=10`: number of trees to train
 
 - `sampling_fraction=0.7`  fraction of samples to train each tree on
 
-- `feature_importance`:    method to use for computing feature importances. One of `(:impurity, :split)`
+- `feature_importance`: method to use for computing feature importances. One of
+  `(:impurity, :split)`
 
 - `rng=Random.GLOBAL_RNG`: random number generator or seed
 
@@ -1052,6 +1082,13 @@ The fields of `fitted_params(mach)` are:
 - `features`: the names of the features encountered in training
 
 
+# Accessor functions
+
+- `feature_importances(mach)` returns a vector of `(feature::Symbol => importance)` pairs;
+  the type of importance is determined by the hyperparameter `feature_importance` (see
+  above)
+
+
 # Examples
 
 ```
@@ -1066,6 +1103,7 @@ Xnew, _ = make_regression(3, 2)
 yhat = predict(mach, Xnew) # new predictions
 
 fitted_params(mach).forest # raw `Ensemble` object from DecisionTree.jl
+feature_importances(mach)
 ```
 
 See also
