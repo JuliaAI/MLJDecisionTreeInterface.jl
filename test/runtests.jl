@@ -82,7 +82,7 @@ yyhat = predict_mode(baretree, fitresult, X[1:3, :])
 @test report.features == [:sepal_length, :sepal_width, :petal_length, :petal_width]
 
 fp = fitted_params(baretree, fitresult)
-@test Set([:tree, :encoding, :features]) == Set(keys(fp))
+@test Set([:tree, :encoding, :features, :raw_tree]) == Set(keys(fp))
 @test fp.features == report.features
 enc = fp.encoding
 @test Set(values(enc)) == Set(["virginica", "setosa", "versicolor"])
