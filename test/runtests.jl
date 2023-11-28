@@ -6,6 +6,7 @@ using StableRNGs
 using Random
 using Tables
 import MLJTestInterface
+using StatisticalMeasures
 
 # load code to be tested:
 import DecisionTree
