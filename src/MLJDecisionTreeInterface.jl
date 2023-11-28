@@ -765,6 +765,8 @@ The fields of `fitted_params(mach)` are:
 
 # Report
 
+The fields of `report(mach)` are:
+
 - `features`: the names of the features encountered in training
 
 
@@ -861,6 +863,8 @@ The fields of `fitted_params(mach)` are:
 
 
 # Report
+
+The fields of `report(mach)` are:
 
 - `features`: the names of the features encountered in training
 
@@ -967,6 +971,8 @@ The fields of `fitted_params(mach)` are:
 
 
 # Report
+
+The fields of `report(mach)` are:
 
 - `features`: the names of the features encountered in training
 
@@ -1078,6 +1084,8 @@ The fields of `fitted_params(mach)` are:
 
 
 # Report
+
+The fields of `report(mach)` are:
 
 - `features`: the names of the features encountered in training
 
