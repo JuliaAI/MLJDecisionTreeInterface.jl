@@ -15,9 +15,10 @@ const PKG = "MLJDecisionTreeInterface"
 
 struct TreePrinter{T}
     tree::T
+    features::Vector{Symbol}
 end
-(c::TreePrinter)(depth) = DT.print_tree(c.tree, depth)
-(c::TreePrinter)() = DT.print_tree(c.tree, 5)
+(c::TreePrinter)(depth) = DT.print_tree(c.tree, depth, feature_names = c.features)
+(c::TreePrinter)() = DT.print_tree(c.tree, 5, feature_names = c.features)
 
 Base.show(stream::IO, c::TreePrinter) =
     print(stream, "TreePrinter object (call with display depth)")
@@ -71,7 +72,7 @@ function MMI.fit(
     cache  = nothing
     report = (
         classes_seen=classes_seen,
-        print_tree=TreePrinter(tree),
+        print_tree=TreePrinter(tree, features),
         features=features,
     )
     return fitresult, cache, report
@@ -765,6 +766,8 @@ The fields of `fitted_params(mach)` are:
 
 # Report
 
+The fields of `report(mach)` are:
+
 - `features`: the names of the features encountered in training
 
 
@@ -861,6 +864,8 @@ The fields of `fitted_params(mach)` are:
 
 
 # Report
+
+The fields of `report(mach)` are:
 
 - `features`: the names of the features encountered in training
 
@@ -967,6 +972,8 @@ The fields of `fitted_params(mach)` are:
 
 
 # Report
+
+The fields of `report(mach)` are:
 
 - `features`: the names of the features encountered in training
 
@@ -1078,6 +1085,8 @@ The fields of `fitted_params(mach)` are:
 
 
 # Report
+
+The fields of `report(mach)` are:
 
 - `features`: the names of the features encountered in training
 
