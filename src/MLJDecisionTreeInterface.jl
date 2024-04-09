@@ -452,7 +452,10 @@ const RandomForestModel = Union{
 
 # # DATA FRONT END
 
-_columnnames(X) = Tables.columnnames(Tables.columns(X)) |> collect
+# to get column names based on table access type:
+_columnnames(X) = _columnnames(X, Val(Tables.columnaccess(X))) |> collect
+_columnnames(X, ::Val{true}) = Tables.columnnames(Tables.columns(X))
+_columnnames(X, ::Val{false}) = Tables.columnnames(first(Tables.rows(X)))
 
 # for fit:
 MMI.reformat(::Classifier, X, y) =

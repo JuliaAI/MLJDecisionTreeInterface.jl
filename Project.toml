@@ -1,7 +1,7 @@
 name = "MLJDecisionTreeInterface"
 uuid = "c6f25543-311c-4c74-83dc-3ea6d1015661"
 authors = ["Anthony D. Blaom <anthony.blaom@gmail.com>"]
-version = "0.4.1"
+version = "0.4.2"
 
 [deps]
 CategoricalArrays = "324d7699-5711-5eae-9e2f-1d82baa6b597"
