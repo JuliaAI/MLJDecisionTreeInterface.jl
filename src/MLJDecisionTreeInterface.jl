@@ -23,10 +23,6 @@ end
 Base.show(stream::IO, c::TreePrinter) =
     print(stream, "TreePrinter object (call with display depth)")
 
-function classes(y)
-    p = CategoricalArrays.pool(y)
-    [p[i] for i in 1:length(p)]
-end
 
 # # DECISION TREE CLASSIFIER
 
@@ -79,7 +75,7 @@ function MMI.fit(
 end
 
 # returns a dictionary of categorical elements keyed on ref integer:
-get_encoding(classes_seen) = Dict(MMI.int(c) => c for c in classes(classes_seen))
+get_encoding(classes_seen) = Dict(MMI.int(c) => c for c in levels(classes_seen))
 
 # given such a dictionary, return printable class labels, ordered by corresponding ref
 # integer:
@@ -459,7 +455,7 @@ _columnnames(X, ::Val{false}) = Tables.columnnames(first(Tables.rows(X)))
 
 # for fit:
 MMI.reformat(::Classifier, X, y) =
-    (Tables.matrix(X), MMI.int(y), _columnnames(X), classes(y))
+    (Tables.matrix(X), MMI.int(y), _columnnames(X), levels(y))
 MMI.reformat(::Regressor, X, y) =
     (Tables.matrix(X), float(y), _columnnames(X))
 MMI.selectrows(::TreeModel, I, Xmatrix, y, meta...) =

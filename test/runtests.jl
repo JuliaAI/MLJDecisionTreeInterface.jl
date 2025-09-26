@@ -1,6 +1,7 @@
 using Test
 import CategoricalArrays
 import CategoricalArrays.categorical
+import CategoricalArrays.levels
 using MLJBase
 using StableRNGs
 using Random
@@ -48,7 +49,7 @@ stable_rng() = StableRNGs.StableRNG(123)
 Xraw, yraw = @load_iris
 X = Tables.matrix(Xraw);
 y = int(yraw);
-_classes = MLJDecisionTreeInterface.classes(yraw)
+_classes = levels(yraw)
 features = MLJDecisionTreeInterface._columnnames(Xraw)
 
 baretree = DecisionTreeClassifier(rng=stable_rng())
@@ -74,7 +75,7 @@ yhat = MLJBase.predict(baretree, fitresult, X);
 
 # check preservation of levels:
 yyhat = predict_mode(baretree, fitresult, X[1:3, :])
-@test MLJBase.classes(yyhat[1]) == MLJBase.classes(yraw)
+@test MLJBase.levels(yyhat[1]) == MLJBase.levels(yraw)
 
 # check report and fitresult fields:
 @test Set([:classes_seen, :print_tree, :features]) == Set(keys(report))
