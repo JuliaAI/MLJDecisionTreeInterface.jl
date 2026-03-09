@@ -589,7 +589,7 @@ Train the machine using `fit!(mach, rows=...)`.
 
 - `max_depth=-1`:          max depth of the decision tree (-1=any)
 
-- `min_samples_leaf=1`:    max number of samples each leaf needs to have
+- `min_samples_leaf=1`:     min number of samples each leaf needs to have
 
 - `min_samples_split=2`:   min number of samples needed for a split
 
@@ -935,7 +935,7 @@ Train the machine with `fit!(mach, rows=...)`.
 
 - `max_depth=-1`:          max depth of the decision tree (-1=any)
 
-- `min_samples_leaf=1`:    max number of samples each leaf needs to have
+- `min_samples_leaf=1`:    min number of samples each leaf needs to have
 
 - `min_samples_split=2`:   min number of samples needed for a split
 
