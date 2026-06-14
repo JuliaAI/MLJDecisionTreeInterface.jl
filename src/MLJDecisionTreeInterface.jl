@@ -7,7 +7,7 @@ import Tables
 using CategoricalArrays
 
 using Random
-import Random.GLOBAL_RNG
+import Random.default_rng
 
 const MMI = MLJModelInterface
 const DT = DecisionTree
@@ -36,7 +36,7 @@ MMI.@mlj_model mutable struct DecisionTreeClassifier <: MMI.Probabilistic
     merge_purity_threshold::Float64 = 1.0::(_ ≤ 1)
     display_depth::Int           = 5::(_ ≥ 1)
     feature_importance::Symbol = :impurity::(_ ∈ (:impurity, :split))
-    rng::Union{AbstractRNG,Integer} = GLOBAL_RNG
+    rng::Union{AbstractRNG,Integer} = default_rng()
 end
 
 function MMI.fit(
@@ -48,6 +48,7 @@ function MMI.fit(
     classes,
     )
 
+    rng = copy(m.rng)
     integers_seen = unique(yplain)
     classes_seen  = MMI.decoder(classes)(integers_seen)
 
@@ -56,8 +57,8 @@ function MMI.fit(
                          m.max_depth,
                          m.min_samples_leaf,
                          m.min_samples_split,
-                         m.min_purity_increase,
-                         rng=m.rng)
+                         m.min_purity_increase;
+                         rng)
     if m.post_prune
         tree = DT.prune_tree(tree, m.merge_purity_threshold)
     end
@@ -117,7 +118,7 @@ MMI.@mlj_model mutable struct RandomForestClassifier <: MMI.Probabilistic
     n_trees::Int                 = 100::(_ ≥ 0)
     sampling_fraction::Float64   = 0.7::(0 < _ ≤ 1)
     feature_importance::Symbol = :impurity::(_ ∈ (:impurity, :split))
-    rng::Union{AbstractRNG,Integer} = GLOBAL_RNG
+    rng::Union{AbstractRNG,Integer} = default_rng()
 end
 
 function MMI.fit(
@@ -129,6 +130,7 @@ function MMI.fit(
     classes,
     )
 
+    rng = copy(m.rng)
     integers_seen = unique(yplain)
     classes_seen  = MMI.decoder(classes)(integers_seen)
 
@@ -140,8 +142,8 @@ function MMI.fit(
                              m.min_samples_leaf,
                              m.min_samples_split,
                              m.min_purity_increase;
-                             rng=m.rng)
-    cache  = deepcopy(m)
+                             rng)
+    cache  = (deepcopy(m), rng)
 
     report = (features=features,)
 
@@ -157,12 +159,14 @@ function MMI.update(
     model::RandomForestClassifier,
     verbosity::Int,
     old_fitresult,
-    old_model,
+    cache,
     Xmatrix,
     yplain,
     features,
     classes,
     )
+
+    old_model, rng = cache
 
     only_iterations_have_changed = MMI.is_same_except(model, old_model, :n_trees)
 
@@ -196,12 +200,12 @@ function MMI.update(
             model.min_samples_leaf,
             model.min_samples_split,
             model.min_purity_increase;
-            rng=model.rng,
+            rng,
         )
     end
 
     fitresult = (forest, old_fitresult[2:3]...)
-    cache = deepcopy(model)
+    cache = (deepcopy(model), rng)
     report = (features=features,)
     return fitresult, cache, report
 
@@ -223,7 +227,7 @@ MMI.iteration_parameter(::Type{<:RandomForestClassifier}) = :n_trees
 MMI.@mlj_model mutable struct AdaBoostStumpClassifier <: MMI.Probabilistic
     n_iter::Int            = 10::(_ ≥ 1)
     feature_importance::Symbol = :impurity::(_ ∈ (:impurity, :split))
-    rng::Union{AbstractRNG,Integer} = GLOBAL_RNG
+    rng::Union{AbstractRNG,Integer} = default_rng()
 end
 
 function MMI.fit(
@@ -235,11 +239,12 @@ function MMI.fit(
     classes,
     )
 
+    rng = copy(m.rng)
     integers_seen = unique(yplain)
     classes_seen  = MMI.decoder(classes)(integers_seen)
 
     stumps, coefs =
-        DT.build_adaboost_stumps(yplain, Xmatrix, m.n_iter, rng=m.rng)
+        DT.build_adaboost_stumps(yplain, Xmatrix, m.n_iter; rng)
     cache  = nothing
 
     report = (features=features,)
@@ -275,11 +280,12 @@ MMI.@mlj_model mutable struct DecisionTreeRegressor <: MMI.Deterministic
     post_prune::Bool                     = false
     merge_purity_threshold::Float64 = 1.0::(0 ≤ _ ≤ 1)
     feature_importance::Symbol = :impurity::(_ ∈ (:impurity, :split))
-    rng::Union{AbstractRNG,Integer} = GLOBAL_RNG
+    rng::Union{AbstractRNG,Integer} = default_rng()
 end
 
 function MMI.fit(m::DecisionTreeRegressor, verbosity::Int, Xmatrix, y, features)
 
+    rng = copy(m.rng)
     tree = DT.build_tree(
         y,
         Xmatrix,
@@ -288,7 +294,7 @@ function MMI.fit(m::DecisionTreeRegressor, verbosity::Int, Xmatrix, y, features)
         m.min_samples_leaf,
         m.min_samples_split,
         m.min_purity_increase;
-        rng=m.rng
+        rng
     )
 
     if m.post_prune
@@ -328,11 +334,12 @@ MMI.@mlj_model mutable struct RandomForestRegressor <: MMI.Deterministic
     n_trees::Int                 = 100::(_ ≥ 0)
     sampling_fraction::Float64   = 0.7::(0 < _ ≤ 1)
     feature_importance::Symbol = :impurity::(_ ∈ (:impurity, :split))
-    rng::Union{AbstractRNG,Integer} = GLOBAL_RNG
+    rng::Union{AbstractRNG,Integer} = default_rng()
 end
 
 function MMI.fit(m::RandomForestRegressor, verbosity::Int, Xmatrix, y, features)
 
+    rng = copy(m.rng)
     forest = DT.build_forest(
         y,
         Xmatrix,
@@ -342,11 +349,11 @@ function MMI.fit(m::RandomForestRegressor, verbosity::Int, Xmatrix, y, features)
         m.max_depth,
         m.min_samples_leaf,
         m.min_samples_split,
-        m.min_purity_increase,
-        rng=m.rng
+        m.min_purity_increase;
+        rng
     )
 
-    cache  = deepcopy(m)
+    cache  = (deepcopy(m), rng)
     report = (features=features,)
 
     return forest, cache, report
@@ -356,11 +363,13 @@ function MMI.update(
     model::RandomForestRegressor,
     verbosity::Int,
     old_forest,
-    old_model,
+    cache,
     Xmatrix,
     y,
     features,
     )
+
+    old_model, rng = cache
 
     only_iterations_have_changed = MMI.is_same_except(model, old_model, :n_trees)
 
@@ -394,11 +403,11 @@ function MMI.update(
             model.min_samples_leaf,
             model.min_samples_split,
             model.min_purity_increase;
-            rng=model.rng
+            rng,
         )
     end
 
-    cache = deepcopy(model)
+    cache = (deepcopy(model), rng)
     report = (features=features,)
 
     return forest, cache, report
@@ -607,7 +616,7 @@ Train the machine using `fit!(mach, rows=...)`.
 - `feature_importance`: method to use for computing feature importances. One of `(:impurity,
   :split)`
 
-- `rng=Random.GLOBAL_RNG`: random number generator or seed
+- `rng=Random.default_rng()`: random number generator or seed
 
 
 # Operations
@@ -743,7 +752,7 @@ Train the machine with `fit!(mach, rows=...)`.
 - `feature_importance`: method to use for computing feature importances. One of `(:impurity,
   :split)`
 
-- `rng=Random.GLOBAL_RNG`: random number generator or seed
+- `rng=Random.default_rng()`: random number generator or seed
 
 
 # Operations
@@ -840,7 +849,7 @@ Train the machine with `fit!(mach, rows=...)`.
 - `feature_importance`: method to use for computing feature importances. One of `(:impurity,
   :split)`
 
-- `rng=Random.GLOBAL_RNG`: random number generator or seed
+- `rng=Random.default_rng()`: random number generator or seed
 
 # Operations
 
@@ -951,7 +960,7 @@ Train the machine with `fit!(mach, rows=...)`.
 - `feature_importance`: method to use for computing feature importances. One of
   `(:impurity, :split)`
 
-- `rng=Random.GLOBAL_RNG`: random number generator or seed
+- `rng=Random.default_rng()`: random number generator or seed
 
 
 # Operations
@@ -1067,7 +1076,7 @@ Train the machine with `fit!(mach, rows=...)`.
 - `feature_importance`: method to use for computing feature importances. One of
   `(:impurity, :split)`
 
-- `rng=Random.GLOBAL_RNG`: random number generator or seed
+- `rng=Random.default_rng()`: random number generator or seed
 
 
 # Operations
