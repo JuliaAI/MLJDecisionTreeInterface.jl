@@ -172,8 +172,8 @@ function reproducibility(model, X, y, loss)
     end
     mach = machine(model, X, y)
     train, test = partition(eachindex(y), 0.7)
+    model.rng = stable_rng()
     errs = map(1:N) do i
-        model.rng = stable_rng()
         fit!(mach, rows=train, force=true, verbosity=0)
         yhat = predict(mach, rows=test)
         loss(yhat, y[test]) |> mean
