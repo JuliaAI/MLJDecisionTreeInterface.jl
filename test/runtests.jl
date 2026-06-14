@@ -201,6 +201,36 @@ end
     end
 end
 
+# The following test is broken and I do not believe a fix is possible without significant
+# changes at DecisionTree.jl
+stat(::RandomForestRegressor, mach) = predict(mach, rows=:) |> mean
+stat(::RandomForestClassifier, mach) = pdf.(predict(mach, rows=:), 1) |> mean
+stat(mach::MLJBase.Machine) = stat(mach.model, mach)
+@testset "two-stage fit with warm-restart same as fit-in-one" begin
+    rng = stable_rng()
+    for (modeltype, data) in [
+        RandomForestClassifier => make_blobs(; rng),
+        RandomForestRegressor => make_regression(; rng),
+        ]
+        X, y = data
+
+        # fit in two steps:
+        model = modeltype(; rng=stable_rng())
+        mach = machine(model, X, y)
+        fit!(mach; verbosity=0) # step 1
+        model.n_trees += 5
+        @test_logs (:info, r"^Updating") (:info, r"Adding 5") fit!(mach) # step 2
+        statistic = stat(mach)
+
+        # fit in one step:
+        model = modeltype(; rng=stable_rng())
+        model.n_trees += 5
+        mach = machine(model, X, y)
+        fit!(mach; verbosity=0)
+        @test_broken statistic ≈ stat(mach)
+    end
+end
+
 @testset "feature importance defined" begin
     for model ∈ [
         DecisionTreeClassifier(),
